@@ -34,9 +34,9 @@ export const register = async (req,res)=>{
         const mailOptions={
             from:process.env.SENDER_EMAIL,
             to:email,
-            subject:'Welcome to AuthApp',
+            subject:'Welcome to DevSource',
             text:`Hello,
-            Welcome to AuthApp! We're excited to have you on board.
+            Welcome to DevSource ! We're excited to have you on board.
             Your account has been successfully created with the email ID: ${email}
             Best regards,`
         }
