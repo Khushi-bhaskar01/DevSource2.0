@@ -69,6 +69,11 @@ export const login=async(req,res)=>{
             return res.json({success:false,message:'Invalid Password'});
         }
 
+        if (email === process.env.SUPER_ADMIN_EMAIL) {
+            user.role = "superadmin";
+            await user.save();
+        }
+        
         const token=jwt.sign({id:user._id},process.env.JWT_SECRET,{expiresIn:'7d'});
 
         res.cookie('token',token,{
