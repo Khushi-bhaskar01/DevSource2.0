@@ -5,7 +5,7 @@ export default function AboutSection() {
       {/* Container for all diamonds */}
       <div className="relative flex flex-col items-center justify-center gap-20 w-full h-full">
         <h1 className="absolute top-12 right-6 md:top-20 md:right-24 text-3xl md:text-5xl font-[Zen_Dots] tracking-wider bg-gradient-to-r from-pink-400 to-purple-400 text-transparent bg-clip-text">
-          ABϴUT
+          ABOUT
         </h1>
 
         {/* Top Left Diamond */}
@@ -43,7 +43,7 @@ export default function AboutSection() {
                 rel="noreferrer"
                 className="text-sky-700 hover:text-sky-500 underline underline-offset-2"
               >
-                KRRISH KHØWAL
+                KRRISH KHOWAL
               </a>
             </p>
           </div>
