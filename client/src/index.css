@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    /* background: linear-gradient(135deg, #7f00ff, #e100ff); */
-     background-color: #0d0d0d; 
+  html, body {
+    overflow-x: hidden;   
+    width: 100%;          
+    background-color: #0d0d0d; 
+    scroll-behavior: smooth;  
+  }
+
+  * {
+    box-sizing: border-box; 
   }
 }
