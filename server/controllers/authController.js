@@ -4,7 +4,7 @@ import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 import { EMAIL_VERIFY_TEMPLATE } from "../templates/emailVerifyTemp.js";
 import { PASSWORD_RESET_TEMPLATE } from "../templates/passResetTemp.js";
-import CustomError from "../utils/CustomError.js";
+import CustomError from "../utils/customError.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { welcomeMail } from "../templates/welcomeMail.js";
 

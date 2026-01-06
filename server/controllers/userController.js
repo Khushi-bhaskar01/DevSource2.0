@@ -58,12 +58,3 @@ export const updateUserProfile = async (req, res, next) => {
     next(err);
   }
 };
-
-export const getLeaderboard = async (req, res, next) => {
-  try {
-    const users = await userModel.find().sort({ points: -1 }).limit(20);
-    res.json(users);
-  } catch (err) {
-    next(err);
-  }
-};
