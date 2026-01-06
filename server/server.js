@@ -10,6 +10,7 @@ import adminRouter from "./routes/adminRouter.js";
 import superAdminRoutes from "./routes/SuperAdminRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
+import leaderboardRoute from "./routes/leaderboardRoute.js";
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -33,6 +34,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/superadmin", superAdminRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/submissions", submissionRoutes);
+app.use("/api/leaderboard", leaderboardRoute);
 app.use(errorMiddleware);
 
 app.listen(port, () => console.log(`Server started on PORT:${port}`));
