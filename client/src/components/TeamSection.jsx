@@ -15,18 +15,6 @@ const teamMembers = [
     linkedin: "https://linkedin.com/in/krrish",
   },
   {
-    name: "Aadi Jain",
-    // image: "/images/ansh.jpg",
-    github: "https://github.com/anshdev",
-    linkedin: "https://linkedin.com/in/ansh",
-  },
-  {
-    name: "Anurag Kr Singh",
-    // image: "/images/aarav.jpg",
-    github: "https://github.com/aaravdev",
-    linkedin: "https://linkedin.com/in/aarav",
-  },
-  {
     name: "Utkarsh Yadav",
     // image: "/images/bhavya.jpg",
     github: "https://github.com/bhavyadev",
