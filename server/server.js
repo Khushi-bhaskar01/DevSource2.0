@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import connectDB from "./config/mongodb.js";
 import authRouter from "./routes/authRouter.js"
 import userRouter from "./routes/userRouter.js";
+import profileRouter from "./routes/profileRouter.js";
 import adminRouter from "./routes/adminRouter.js";
 import superAdminRoutes from "./routes/SuperAdminRoutes.js";
 
@@ -24,6 +25,7 @@ app.use(cors({
 app.get('/',(req,res)=> res.send("Api Working!"));
 app.use('/api/auth',authRouter);
 app.use('/api/user',userRouter);
+app.use('/api/profile', profileRouter);
 app.use('/api/admin',adminRouter);
 app.use("/api/superadmin", superAdminRoutes);
 

@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema(
       default: [],
     },
 
-    points: { type: Number, default: 0, immutable: true }, 
+    points: { type: Number, default: 0 },
     
     role: {
       type: String,
