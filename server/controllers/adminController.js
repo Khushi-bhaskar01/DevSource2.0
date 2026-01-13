@@ -1,34 +1,42 @@
 import taskModel from "../models/taskModel.js";
 import userTaskModel from "../models/userTask.js";
 import mongoose from "mongoose";
-export const addTask = async (req, res) => {
-    const { domain, title, description, points } = req.body;
-    if (!title || !points) {
-        return res.json({ success: false, message: "Invalid task name" });
+export const addTask = async (req, res, next) => {
+  const { domain, title, description, points } = req.body;
+  if (!title || !points) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid task name" });
+  }
+  try {
+    const newTask = taskModel({
+      domain,
+      title,
+      description,
+      taskid: new mongoose.Types.ObjectId().toString(),
+      points,
+    });
+    await newTask.save();
+    res.json({ success: true, task: newTask });
+  } catch (error) {
+    next(error);
+  }
+};
+export const removeTask = async (req, res, next) => {
+  const { taskid } = req.body;
+  try {
+    const deleted = await taskModel.findOneAndDelete({ taskid });
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Invalid task" });
     }
-    try {
-        const newTask =taskModel({domain,title,description,taskid: new mongoose.Types.ObjectId().toString(),points});
-        await newTask.save();
-        res.json({ success: true, task: newTask });
-    } catch (error) {
-        res.status(500).json({ success: false, message:error.message });
-    }
-}
-export const removeTask = async (req,res) => {
-    const { taskid } = req.body;
-    try {
-        const deleted = await taskModel.findOneAndDelete({ taskid });
-        if (!deleted) {
-            return res.json({ success: false, message: "Invalid task" });
-        }
-        await userTaskModel.deleteMany({ taskid: taskid });
-        res.json({ success: true, message: "Task removed" });
-    } catch (error) {
-        res.status(500).json({ success: false, message:error.message });
-    }
-}
-export const getTasksByDomain = async (req, res) => {
-  const { domain } = req.body;
+    await userTaskModel.deleteMany({ taskid: taskid });
+    res.json({ success: true, message: "Task removed" });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getTasksByDomain = async (req, res, next) => {
+  const { domain } = req.query;
   if (!domain) {
     return res.status(400).json({ success: false, message: "Invalid Domain" });
   }
@@ -37,40 +45,47 @@ export const getTasksByDomain = async (req, res) => {
     const tasks = await taskModel.find({ domain });
     res.json({ success: true, tasks });
   } catch (error) {
-    res.status(500).json({ success: false, message:error.message });
+    next(error);
   }
 };
 
-export const approveTask = async (req, res) => {
+export const approveTask = async (req, res, next) => {
   const { email, taskid } = req.body;
   if (!email || !taskid) {
     return res.status(400).json({ success: false, message: "Missing details" });
   }
 
   try {
-    const updated = userTaskModel({ email, taskid,status:'approved',new: true });
+    const updated = await userTaskModel.findOneAndUpdate(
+      { email, taskid },
+      { status: "approved" },
+      { new: true }
+    );
 
-    await updated.save();
     if (!updated) {
-      return res.status(404).json({ success: false, message: "User-task not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User-task not found" });
     }
 
     res.json({ success: true, userTask: updated });
   } catch (error) {
-    res.status(500).json({ success: false, message:error.message });
+    next(error);
   }
 };
 
-export const rejectTask = async (req, res) => {
+export const rejectTask = async (req, res, next) => {
   const { email, taskid } = req.body;
   if (!email || !taskid) {
-    return res.status(400).json({ success: false, message: "Missing email or taskid" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing email or taskid" });
   }
 
   try {
     const updated = await userTaskModel.findOneAndUpdate(
       { email, taskid },
-      { status: 'rejected' },
+      { status: "rejected" },
       { new: true }
     );
 
@@ -80,7 +95,6 @@ export const rejectTask = async (req, res) => {
 
     res.json({ success: true, userTask: updated });
   } catch (error) {
-    res.status(500).json({ success: false, message:error.message });
+    next(error);
   }
 };
-

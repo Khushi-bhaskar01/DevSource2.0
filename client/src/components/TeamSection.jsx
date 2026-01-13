@@ -16,9 +16,9 @@ const teamMembers = [
   },
   {
     name: "Utkarsh Yadav",
-    // image: "/images/bhavya.jpg",
-    github: "https://github.com/bhavyadev",
-    linkedin: "https://linkedin.com/in/bhavya",
+    image: "/images/utk.jpg",
+    github: "https://github.com/utkarsh3078",
+    linkedin: "https://www.linkedin.com/in/utkarsh-yadav3078a",
   },
 ];
 

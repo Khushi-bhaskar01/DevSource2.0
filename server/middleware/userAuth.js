@@ -5,7 +5,9 @@ const userAuth = async (req, res, next) => {
   const { token } = req.cookies;
 
   if (!token) {
-    return res.status(401).json({ success: false, message: "No token provided" });
+    return res
+      .status(401)
+      .json({ success: false, message: "No token provided" });
   }
 
   try {
@@ -14,10 +16,12 @@ const userAuth = async (req, res, next) => {
     const user = await userModel.findById(decoded.id).select("-password");
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    req.user = user; 
+    req.user = user;
     next();
   } catch (error) {
     return res.status(401).json({ success: false, message: error.message });

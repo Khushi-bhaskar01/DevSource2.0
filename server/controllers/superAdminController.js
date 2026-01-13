@@ -1,67 +1,74 @@
-import adminConfigModel from "../models/adminConfig.js";
-import userModel from "../models/userModel.js"; 
+import userModel from "../models/userModel.js";
+import CustomError from "../utils/CustomError.js";
 
-export const addAdmin = async (req, res) => {
+export const addAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const requester = req.user.email;
 
-    if (requester !== process.env.SUPER_ADMIN_EMAIL) {
-      return res.status(403).json({ success: false, message: "Access denied" });
+    // 1. Check if requester is the Super Admin
+    //    Or, keep your email check:
+    if (req.user.role !== "superadmin") {
+      throw new CustomError("Access denied. Not a Super Admin.", 403);
     }
 
-    let config = await adminConfigModel.findOne();
-    if (!config) config = new adminConfigModel();
-
-    if (config.admins.includes(email)) {
-      return res.json({ success: false, message: "Admin already exists" });
-    }
-
+    // 2. Find the user to promote
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.json({ success: false, message: "User not found with this email" });
+      throw new CustomError("User not found with this email", 404);
     }
 
+    // 3. Check if they are already an admin or superadmin
+    if (user.role === "admin" || user.role === "superadmin") {
+      throw new CustomError("User is already an admin", 400);
+    }
+
+    // 4. Promote to "admin"
     user.role = "admin";
     await user.save();
 
-    config.admins.push(email);
-    await config.save();
-
     res.json({
       success: true,
-      message: "Admin added successfully",
-      admins: config.admins,
+      message: `${user.name} (${email}) has been promoted to admin.`,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const removeAdmin = async (req, res) => {
+export const removeAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const requester = req.user.email;
-    console.log("Requester email:", requester);
 
-    if (requester !== process.env.SUPER_ADMIN_EMAIL) {
-      return res.status(403).json({ success: false, message: "Access denied" });
+    // 1. Check if requester is the Super Admin
+    if (req.user.role !== "superadmin") {
+      throw new CustomError("Access denied. Not a Super Admin.", 403);
     }
 
-    const config = await adminConfigModel.findOne();
-    if (!config) return res.json({ success: false, message: "No admin list found" });
+    // 2. Prevent self-demotion (using email check is still safest here)
+    if (email === process.env.SUPER_ADMIN_EMAIL) {
+      throw new CustomError("Cannot remove the Super Admin.", 400);
+    }
 
-    config.admins = config.admins.filter((admin) => admin !== email);
-    await config.save();
+    // 3. Find the user to demote
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      throw new CustomError("User not found with this email", 404);
+    }
 
-    await userModel.findOneAndUpdate({ email }, { role: "student" });
+    // 4. Check if they are not an admin
+    if (user.role !== "admin") {
+      throw new CustomError("User is not an admin.", 400);
+    }
+
+    // 5. Demote to "student"
+    user.role = "student";
+    await user.save();
 
     res.json({
       success: true,
-      message: "Admin removed successfully",
-      admins: config.admins,
+      message: `${user.name} (${email}) has been demoted to student.`,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };

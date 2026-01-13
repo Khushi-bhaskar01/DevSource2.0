@@ -1,11 +1,11 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-    host:"smtp.gmail.com",
-    port:587,
-    auth:{
-        user:process.env.SMTP_USER,
-        pass:process.env.SMTP_PASS
-    }
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  auth: {
+    user: process.env.BREVO_LOGIN,
+    pass: process.env.BREVO_SMTP_KEY,
+  },
 });
 export default transporter;

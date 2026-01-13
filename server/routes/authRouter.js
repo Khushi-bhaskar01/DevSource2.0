@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 import {
   isAuthenticated,
   login,
@@ -7,19 +7,37 @@ import {
   resetPassword,
   sendResetOtp,
   sendVerifyOtp,
-  verifyEmail
-} from '../controllers/authController.js';
-import userAuth from '../middleware/userAuth.js';
+  verifyEmail,
+} from "../controllers/authController.js";
+
+import userAuth from "../middleware/userAuth.js";
+
+import { validate } from "../middleware/validationMiddleware.js";
+import {
+  registerSchema,
+  loginSchema,
+  otpSchema,
+  resetPasswordSchema,
+  emailSchema,
+} from "../models/validationSchema.js";
 
 const authRouter = express.Router();
 
-authRouter.post('/register', register);
-authRouter.post('/login', login);
-authRouter.post('/logout', logout);
-authRouter.post('/send-verify-otp', userAuth, sendVerifyOtp);
-authRouter.post('/verify-email', userAuth, verifyEmail);
-authRouter.get('/is-auth', userAuth, isAuthenticated);
-authRouter.post('/send-reset-otp', sendResetOtp);
-authRouter.post('/reset-password', resetPassword);
+//Public Routes
+authRouter.post("/register", validate(registerSchema), register);
+authRouter.post("/login", validate(loginSchema), login);
+authRouter.post("/send-reset-otp", validate(emailSchema), sendResetOtp);
+authRouter.post(
+  "/reset-password",
+  validate(resetPasswordSchema),
+  resetPassword
+);
+
+//Protected Routes
+authRouter.post("/logout", userAuth, logout);
+authRouter.post("/send-verify-otp", userAuth, sendVerifyOtp);
+authRouter.post("/verify-email", userAuth, validate(otpSchema), verifyEmail);
+
+authRouter.get("/is-auth", userAuth, isAuthenticated);
 
 export default authRouter;
