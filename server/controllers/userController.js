@@ -1,35 +1,24 @@
 import userModel from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 
-export const getUserData = async (req, res, next) => {
+export const getUserData = async (req, res) => {
   try {
-    const { id } = req.user;
-    const user = await userModel.findById(id);
-    if (!user) {
-      return res.json({ success: false, message: "User not found!" });
-    }
+    const allUsers = await userModel.find({}, "name domain linkedin");
+
+    const groupedMembers = {
+      webDev: allUsers.filter((u) => u.domain?.includes("web")),
+      gameDev: allUsers.filter((u) => u.domain?.includes("game")),
+      appDev: allUsers.filter((u) => u.domain?.includes("app")),
+    };
+
     res.json({
       success: true,
-      userData: {
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        points: user.points,
-        badges: user.badges,
-        domain: user.domain,
-        aboutMe: user.aboutMe,
-        linkedin: user.linkedin,
-        github: user.github,
-        branch: user.branch,
-        role: user.role,
-        year: user.year,
-        location: user.location,
-        profilePicture: user.profilePicture,
-        isAccountVerified: user.isAccountVerified,
-      },
+      points: req.user?.points || 0, 
+      members: groupedMembers,
     });
   } catch (error) {
-    next(error);
+    console.error("getUserData error:", error);
+    res.status(500).json({ success: false });
   }
 };
 
