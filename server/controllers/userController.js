@@ -58,3 +58,19 @@ export const updateUserProfile = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getPublicProfile = async (req, res) => {
+  try {
+    const user = await userModel
+      .findById(req.params.id)
+      .select("name domain linkedin points profilePicture badges");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch public profile" });
+  }
+};
