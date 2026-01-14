@@ -195,7 +195,7 @@ export default function Navbar() {
             <Link
               key={item.label}
               to={item.path}
-              className={`relative font-[Zen_Dots] text-sm transition-all duration-300 ${
+              className={`relative font-mono text-lg transition-all duration-300 ${
                 location.pathname === item.path
                   ? "text-[#ff81cc]"
                   : "text-white hover:text-[#ff81cc]"

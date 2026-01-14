@@ -19,13 +19,24 @@ const teamMembers = [
     image: "/images/utk.jpg",
     github: "https://github.com/utkarsh3078",
     linkedin: "https://www.linkedin.com/in/utkarsh-yadav3078a",
+  }, {
+    name: "Anurag kr Singh",
+    // image: "/images/krrish.jpg",
+    github: "https://github.com/krrishdev",
+    linkedin: "https://linkedin.com/in/krrish",
+  },
+  {
+    name: "Aadi Jain",
+    // image: "/images/krrish.jpg",
+    github: "https://github.com/krrishdev",
+    linkedin: "https://linkedin.com/in/krrish",
   },
 ];
 
 const TeamSection = () => {
   return (
     <section id="team" className="py-16 bg-black text-center text-white">
-      <h2 className="text-4xl md:text-5xl font-semibold mb-12 bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+      <h2 className="text-4xl md:text-3xl font-[Zen_Dots] font-semibold mb-12 bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
         MEET OUR TEAM
       </h2>
 

@@ -54,17 +54,17 @@ const Members = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-[Zen_Dots] overflow-x-hidden">
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
       <Navbar />
 
-      <h1 className="text-center text-5xl mt-24 tracking-wider font-bold bg-linear-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
+      <h1 className="text-center font-[Zen_Dots] text-5xl mt-24 tracking-wider font-bold bg-linear-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
         MEMBERS
       </h1>
 
-      <div className="flex justify-center items-start gap-12 mt-16 px-8 flex-wrap">
+      <div className="flex justify-center items-start gap-12 mt-16 px-8 flex-wrap  ">
         {/* 🎮 Game Dev */}
         <div className="flex flex-col items-center">
-          <div className="bg-linear-to-b from-yellow-200 to-cyan-200 w-64 h-[450px] rounded-2xl overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          <div className="bg-linear-to-b from-yellow-200 to-cyan-200 w-64 h-[450px] rounded-2xl overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent font-[Courier New]">
             {members.gameDev.length > 0 ? (
               members.gameDev.map((m) => (
                 <MemberCard
@@ -79,12 +79,12 @@ const Members = () => {
               </p>
             )}
           </div>
-          <p className="mt-4 text-lg text-yellow-100">🎮 Game Dev</p>
+          <p className="mt-4 text-lg text-yellow-100 font-[Zen_Dots]">🎮 Game Dev</p>
         </div>
 
         {/* 💻 Web Dev */}
         <div className="flex flex-col items-center">
-          <div className="bg-linear-to-b from-blue-200 to-pink-300 w-72 h-[550px] rounded-2xl overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          <div className="bg-linear-to-b from-blue-200 to-pink-300 w-72 h-[550px] rounded-2xl overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent font-[Courier New]">
             {members.webDev.length > 0 ? (
               members.webDev.map((m) => (
                 <MemberCard
@@ -99,12 +99,12 @@ const Members = () => {
               </p>
             )}
           </div>
-          <p className="mt-4 text-lg text-pink-200">💻 Web Dev</p>
+          <p className="mt-4 text-lg text-pink-200 font-[Zen_Dots]">💻 Web Dev</p>
         </div>
 
         {/* 📱 App Dev */}
         <div className="flex flex-col items-center">
-          <div className="bg-linear-to-b from-green-200 to-cyan-200 w-64 h-[450px] rounded-2xl overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          <div className="bg-linear-to-b from-green-200 to-cyan-200 w-64 h-[450px] rounded-2xl overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent font-[Courier New]">
             {members.appDev.length > 0 ? (
               members.appDev.map((m) => (
                 <MemberCard
@@ -119,7 +119,7 @@ const Members = () => {
               </p>
             )}
           </div>
-          <p className="mt-4 text-lg text-green-200">📱 App Dev</p>
+          <p className="mt-4 text-lg text-green-200 font-[Zen_Dots]">📱 App Dev</p>
         </div>
       </div>
     </div>
