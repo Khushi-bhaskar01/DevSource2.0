@@ -108,7 +108,7 @@ export const getSubmissionsByTask = async (req, res, next) => {
 // Get submissions for a specific user
 export const getSubmissionsByUser = async (req, res, next) => {
   try {
-    const { userId } = req.user.id;
+    const userId = req.user.id;
     const submissions = await submissionModel
       .find({ userId })
       .populate("taskId", "title domain");

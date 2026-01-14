@@ -17,6 +17,6 @@ router.put("/:id/status", isAuthenticated, isAdmin, updateSubmissionStatus);
 
 // Get submissions by task or user
 router.get("/task/:taskId", isAuthenticated, isAdmin, getSubmissionsByTask);
-router.get("/submissions", isAuthenticated, getSubmissionsByUser);
+router.get("/my", isAuthenticated, getSubmissionsByUser);
 
 export default router;
