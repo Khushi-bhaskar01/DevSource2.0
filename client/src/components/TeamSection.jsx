@@ -5,8 +5,8 @@ const teamMembers = [
   {
     name: "Khushi Bhaskar",
     image: "/images/KB.jpg",
-    github: "https://github.com/chetnadev",
-    linkedin: "https://linkedin.com/in/chetna",
+    github: "https://github.com/Khushi-bhaskar01",
+    linkedin: "https://www.linkedin.com/in/khushi-bhaskar-b00586324/",
   },
   {
     name: "Krrish Khowal",

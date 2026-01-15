@@ -63,3 +63,15 @@ export const getPublicProfile = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch public profile" });
   }
 };
+export const getMyUserTasks = async (req, res) => {
+  try {
+    const email = req.user?.email;
+    if (!email) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    const userTaskModel = (await import('../models/userTask.js')).default;
+    const items = await userTaskModel.find({ email });
+    res.json({ success: true, tasks: items });
+  } catch (err) {
+    console.error('getMyUserTasks error:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch user tasks' });
+  }
+};

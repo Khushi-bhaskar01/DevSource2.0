@@ -26,7 +26,7 @@ router.post(
 );
 
 //Get all tasks
-router.get("/", isAuthenticated, isAdmin, getAllTasks);
+router.get("/", isAuthenticated, getAllTasks);
 
 //Get task by ID
 router.get("/:id", isAuthenticated, isAdmin, getTaskById);

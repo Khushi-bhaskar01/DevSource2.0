@@ -2,27 +2,26 @@ import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import TaskCard from "../components/TaskCard";
 import TaskSubmitModal from "../components/TaskSubmitModal";
-import ProgressBar from "../components/ProgressBar";
 import api from "../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 
 const DOMAINS = ["web", "app", "game"];
+const POINT_CATEGORIES = ["Beginner", "Intermediate", "Advanced"];
 
 export default function Tasks() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [activeDomain, setActiveDomain] = useState("web");
   const [tasks, setTasks] = useState([]);
-  const [myTaskStatus, setMyTaskStatus] = useState({});
+  const [submissions, setSubmissions] = useState({});
   const [modalTask, setModalTask] = useState(null);
-
   const [userPoints, setUserPoints] = useState(0);
+  const [activeDomain, setActiveDomain] = useState("web");
+  const [activeCategory, setActiveCategory] = useState("Beginner");
+  const [loading, setLoading] = useState(true);
 
   const token =
-    localStorage.getItem("token") || localStorage.getItem("authToken");
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken");
 
   /* ================= FETCH DATA ================= */
   useEffect(() => {
@@ -31,115 +30,87 @@ export default function Tasks() {
       return;
     }
 
-    let mounted = true;
-
-    const fetchAll = async () => {
-      setLoading(true);
-      setError("");
-
+    const fetchData = async () => {
       try {
-        /* USER DATA (ONLY POINTS) */
-        const ur = await api.get("/api/user/data");
-        if (mounted) setUserPoints(ur.data?.points || 0);
+        /* USER */
+        const userRes = await api.get("/api/user/data");
+        setUserPoints(userRes.data?.userData?.points || 0);
 
-        /* ALL TASKS */
-        const tr = await api.get("/api/user/tasks");
-        if (mounted) setTasks(tr.data?.tasks || []);
+        /* TASKS */
+        const taskRes = await api.get("/api/tasks");
+        setTasks(Array.isArray(taskRes.data) ? taskRes.data : []);
 
-        /* USER TASK STATUS */
-        const usr = await api.get("/api/user/tasks-status");
+        /* MY SUBMISSIONS */
+        const submissionRes = await api.get("/api/submissions/my");
+
         const map = {};
-        (usr.data?.tasks || []).forEach((t) => {
-          map[String(t.taskid)] = {
-            status: t.status?.toLowerCase(),
-            github: t.github,
-            demo: t.demo,
-          };
-        });
-        if (mounted) setMyTaskStatus(map);
+        if (Array.isArray(submissionRes.data)) {
+          submissionRes.data.forEach((sub) => {
+            if (sub.taskId && sub.taskId._id) {
+              map[sub.taskId._id] = sub;
+            }
+          });
+        }
+
+        setSubmissions(map);
       } catch (err) {
-        console.error(err);
-        setError("Failed to load tasks");
+        console.error("Tasks fetch error:", err);
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchAll();
-
-    return () => (mounted = false);
+    fetchData();
   }, [token, navigate]);
 
-  /* ================= HELPERS ================= */
-  const deriveLevel = (pts) => {
-    if (pts <= 50) return "beginner";
-    if (pts <= 150) return "intermediate";
-    return "advanced";
-  };
-
-  const isLocked = (level) => {
-    if (level === "intermediate") return userPoints < 100;
-    if (level === "advanced") return userPoints < 200;
-    return false;
-  };
-
-  const filteredTasks = tasks
-    .filter((t) => t.domain === activeDomain)
-    .map((t) => ({
-      ...t,
-      taskid: String(t.taskid),
-      level: deriveLevel(Number(t.points || 0)),
-    }));
-
-  const grouped = { beginner: [], intermediate: [], advanced: [] };
-  filteredTasks.forEach((t) => grouped[t.level]?.push(t));
-
   /* ================= SUBMIT ================= */
-  const handleSubmitProof = async ({ taskid, github, demo }) => {
-    const res = await api.post("/api/user/submit-task", {
-      taskid,
-      github,
-      demo,
+  const handleSubmitProof = async ({ taskId, submissionLink }) => {
+    const res = await api.post("/api/submissions", {
+      taskId,
+      submissionLink,
     });
 
-    const ut = res.data?.userTask;
-    if (ut?.taskid) {
-      setMyTaskStatus((prev) => ({
-        ...prev,
-        [String(ut.taskid)]: {
-          status: ut.status?.toLowerCase() || "pending",
-          github: ut.github,
-          demo: ut.demo,
-        },
-      }));
-    }
+    setSubmissions((prev) => ({
+      ...prev,
+      [taskId]: res.data.submission,
+    }));
   };
+
+  /* ================= FILTER ================= */
+  const filteredTasks = tasks.filter((t) => {
+    if (t.domain !== activeDomain) return false;
+
+    if (activeCategory === "Beginner" && t.points <= 50) return true;
+    if (
+      activeCategory === "Intermediate" &&
+      t.points > 50 &&
+      t.points <= 200
+    )
+      return true;
+    if (activeCategory === "Advanced" && t.points > 200) return true;
+
+    return false;
+  });
 
   /* ================= LOADING ================= */
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white pt-24">
         <Navbar />
-        <p className="text-center mt-10 animate-pulse">
-          Loading tasks...
-        </p>
+        <p className="text-center animate-pulse">Loading tasks...</p>
       </div>
     );
   }
 
   /* ================= RENDER ================= */
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-4 sm:px-8">
+    <div className="min-h-screen bg-black text-white pt-24 px-6">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto mt-10 space-y-8">
+      <div className="max-w-6xl mx-auto mt-10 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-[Zen_Dots]">
-            Tasks
-          </h1>
-          <div className="w-80">
-            <ProgressBar points={userPoints} />
-          </div>
+          <h1 className="text-3xl font-[Zen_Dots]">Tasks</h1>
+         
         </div>
 
         {/* DOMAIN FILTER */}
@@ -159,40 +130,53 @@ export default function Tasks() {
           ))}
         </div>
 
-        {error && <p className="text-red-400">{error}</p>}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {["beginner", "intermediate", "advanced"].map((lvl) => (
-            <div key={lvl}>
-              <h3 className="text-xl mb-3 capitalize">{lvl}</h3>
-              <div className="bg-white/5 p-4 rounded-lg">
-                {grouped[lvl].length === 0 && (
-                  <p className="text-gray-400">No tasks</p>
-                )}
-                {grouped[lvl].map((t) => (
-                  <TaskCard
-                    key={t.taskid}
-                    task={t}
-                    locked={isLocked(lvl)}
-                    status={myTaskStatus[t.taskid]?.status || "idle"}
-                    onOpenSubmit={() => setModalTask(t)}
-                  />
-                ))}
-              </div>
-            </div>
+        {/* POINT FILTER */}
+        <div className="flex gap-4">
+          {POINT_CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-4 py-2 rounded ${
+                activeCategory === cat
+                  ? "bg-green-500"
+                  : "bg-white/10 hover:bg-white/20"
+              }`}
+            >
+              {cat}
+            </button>
           ))}
         </div>
 
+        {/* TASK GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          {filteredTasks.map((task) => (
+            <TaskCard
+              key={task._id}
+              task={task}
+              submission={submissions[task._id] || null}
+              onOpenSubmit={() => {
+                if (submissions[task._id]) return;
+                setModalTask(task);
+              }}
+            />
+          ))}
+        </div>
+
+        {/* SUBMIT MODAL */}
         {modalTask && (
           <TaskSubmitModal
             open
             task={modalTask}
             onClose={() => setModalTask(null)}
-            onSubmit={handleSubmitProof}
+            onSubmit={({ submissionLink }) =>
+              handleSubmitProof({
+                taskId: modalTask._id,
+                submissionLink,
+              })
+            }
           />
         )}
       </div>
     </div>
   );
 }
-

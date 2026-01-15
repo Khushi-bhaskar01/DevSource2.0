@@ -6,5 +6,5 @@ const taskSchema = new mongoose.Schema({
   points: { type: Number, default: 0 },
   deadline: { type: String, required: true },
 });
-const taskModel = mongoose.models.task || mongoose.model("tasks", taskSchema);
+const taskModel = mongoose.models.Task || mongoose.model("Task", taskSchema);
 export default taskModel;
