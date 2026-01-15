@@ -3,6 +3,7 @@ import taskModel from "../models/taskModel.js";
 import userModel from "../models/userModel.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { taskAssignedTemplate } from "../templates/taskAssigned.js";
+import { taskStatusTemplate } from "../templates/taskStatus.js";
 import { BADGES } from "../config/badges.js";
 
 // Create a new submission
@@ -121,7 +122,7 @@ export const updateSubmissionStatus = async (req, res, next) => {
     if (updatedSubmission) {
       const user = updatedSubmission.userId;
       const task = updatedSubmission.taskId;
-      const html = taskAssignedTemplate(user, task, status, feedback);
+      const html = taskStatusTemplate(user, task, status, feedback);
 
       sendEmail(user.email, `Submission Update: ${task.title}`, html);
     }

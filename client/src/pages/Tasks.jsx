@@ -34,7 +34,7 @@ export default function Tasks() {
       try {
         /* USER */
         const userRes = await api.get("/api/user/data");
-        setUserPoints(userRes.data?.userData?.points || 0);
+        setUserPoints(userRes.data?.points || 0);
 
         /* TASKS */
         const taskRes = await api.get("/api/tasks");
@@ -108,8 +108,17 @@ export default function Tasks() {
       <Navbar />
 
       <div className="max-w-6xl mx-auto mt-10 space-y-6">
-        <div className="flex justify-between items-center">
+         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-[Zen_Dots]">Tasks</h1>
+
+           {/* TOTAL POINTS */}
+           <div className="bg-green-500/20 border border-green-500 px-6 py-3 rounded-xl">
+           <p className="text-sm text-green-300">Total Points</p>
+           <p className="text-2xl font-bold text-green-400">
+              {userPoints} pts
+           </p>
+          </div>
+
          
         </div>
 
@@ -177,6 +186,6 @@ export default function Tasks() {
           />
         )}
       </div>
-    </div>
+  </div>
   );
 }
