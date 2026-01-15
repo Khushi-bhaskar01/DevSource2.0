@@ -2,7 +2,7 @@ import React from "react";
 
 export default function AboutSection() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center bg-black text-white overflow-hidden px-6 sm:px-10 py-20">
+    <section id="about" className="relative min-h-screen flex flex-col items-center justify-center bg-black text-white overflow-hidden px-6 sm:px-10 py-20">
       <h1 className="absolute top-12 right-10 text-4xl md:text-6xl font-[Zen_Dots] tracking-widest bg-linear-to-r from-pink-400 to-purple-400 text-transparent bg-clip-text">
         ABOUT
       </h1>

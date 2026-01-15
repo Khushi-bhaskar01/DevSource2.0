@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
+import { BADGES } from "../data/badgeConfig.js";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axiosInstance";
 import { useAuth } from "../AuthContext";
@@ -484,28 +485,45 @@ export default function ProfilePage() {
 
           {/* BADGES */}
           <section className="mt-6">
-            <h3 className="font-[Zen_Dots] text-lg mb-3">My Badges</h3>
+          <h3 className="font-[Zen_Dots] text-lg mb-3">My Badges</h3>
 
-            {user.badges?.length > 0 ? (
-              <div className="flex flex-wrap gap-3">
-                {user.badges.map((b, i) => (
-                  <div
-                    key={i}
-                    className="px-4 py-2 rounded-xl border border-white/20 bg-white/5 text-xs"
-                  >
-                    <p className="font-[Zen_Dots]">{b.badgeId}</p>
-                    {b.earnedAt && (
-                      <p className="text-[10px] text-gray-300">
-                        Earned: {new Date(b.earnedAt).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                ))}
+          <div className="flex flex-wrap gap-4">
+          {BADGES.map((badge) => {
+           const earned = Number(user?.points || 0) >= Number(badge.points);
+
+          return (
+            <div
+              key={badge.id}
+              className={`w-24 rounded-xl p-3 text-center border transition ${
+                earned
+                  ? "bg-white/10 border-white/30"
+                  : "bg-black/40 border-white/10 opacity-40"
+              }`}
+            >
+           <img
+            src={badge.image}
+            alt={badge.name}
+            className={`w-14 h-14 mx-auto object-contain ${
+              !earned ? "grayscale" : ""
+             }`}
+            />
+
+               <p className="text-[11px] mt-2 font-[Zen_Dots]">
+                 {badge.name}
+               </p>
+
+               {!earned ? (
+                  <p className="text-[10px] text-gray-400">
+                    Unlock at {badge.points} pts
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-green-400">Unlocked</p>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-gray-400">No badges yet.</p>
-            )}
-          </section>
+            );
+          })}
+        </div>
+        </section>
         </div>
       </div>
     </div>

@@ -1,7 +1,10 @@
 import heroImage from "../assets/hero.png";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function HeroSection() {
+  const navigate = useNavigate();
+
   return (
     <section className="relative flex flex-col md:flex-row items-center justify-between px-8 md:px-16 py-30 bg-linear-to-r from-[#8B00FF] via-[#C850C0] to-[#FF69B4] text-white overflow-hidden">
       
@@ -25,18 +28,27 @@ export default function HeroSection() {
           Innovative Development Solutions for a Dynamic World
         </p>
 
+        {/* BUTTONS */}
         <div className="flex gap-5 mt-8">
+          {/* Go to Tasks page */}
           <motion.button
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/tasks")}
             className="bg-linear-to-r from-[#FFD700] to-[#FF007F] text-black px-6 py-2 rounded-md font-semibold shadow-md"
           >
             Start Your Project Now
           </motion.button>
 
+          {/* Scroll to About section */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              document.getElementById("about")?.scrollIntoView({
+                behavior: "smooth",
+              });
+            }}
             className="border-2 border-[#FFD700] text-white px-6 py-2 rounded-md hover:bg-[#ff007f]/20 transition"
           >
             Read More
