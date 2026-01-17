@@ -8,6 +8,9 @@ import CustomError from "../utils/customError.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { welcomeMail } from "../templates/welcomeMail.js";
 
+/* =========================
+   TOKEN COOKIE HELPER
+========================= */
 const sendTokenCookie = (user, res) => {
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: "7d",
@@ -15,12 +18,15 @@ const sendTokenCookie = (user, res) => {
 
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: true,      // REQUIRED for Render (HTTPS)
+    sameSite: "none",  // REQUIRED for Vercel ↔ Render
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
 
+/* =========================
+   REGISTER
+========================= */
 export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
@@ -36,7 +42,7 @@ export const register = async (req, res, next) => {
 
     sendTokenCookie(user, res);
 
-    // Send welcome email
+    // Welcome email
     const welcomeHtml = welcomeMail(name, email);
     transporter.sendMail(welcomeHtml).catch((err) => {
       console.error(`Welcome Email Error: ${err.message}`);
@@ -57,11 +63,14 @@ export const register = async (req, res, next) => {
   }
 };
 
+/* =========================
+   LOGIN
+========================= */
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email }).select("+password"); // Include password
+    const user = await userModel.findOne({ email }).select("+password");
     if (!user) {
       throw new CustomError("Invalid email or password", 401);
     }
@@ -77,6 +86,7 @@ export const login = async (req, res, next) => {
     }
 
     sendTokenCookie(user, res);
+
     return res.status(200).json({
       success: true,
       user: {
@@ -92,51 +102,72 @@ export const login = async (req, res, next) => {
   }
 };
 
+/* =========================
+   LOGOUT
+========================= */
 export const logout = async (req, res, next) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      secure: true,
+      sameSite: "none",
     });
-    return res.status(200).json({ success: true, message: "Logged Out" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged Out",
+    });
   } catch (error) {
     next(error);
   }
 };
 
+/* =========================
+   SEND VERIFY OTP
+========================= */
 export const sendVerifyOtp = async (req, res, next) => {
   try {
     const user = await userModel.findById(req.user.id);
+
     if (user.isAccountVerified) {
-      return res.json({ success: true, message: "Account already verified" });
+      return res.json({
+        success: true,
+        message: "Account already verified",
+      });
     }
 
     const otp = String(Math.floor(100000 + Math.random() * 90000));
     user.verifyOtp = otp;
-    user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000;
     await user.save();
 
-    const html = EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp).replace(
-      "{{email}}",
-      user.email
-    );
+    const html = EMAIL_VERIFY_TEMPLATE
+      .replace("{{otp}}", otp)
+      .replace("{{email}}", user.email);
+
     sendEmail(user.email, "Verify Your Email - DevSource", html);
 
-    return res.status(200).json({ success: true, message: "OTP Sent!" });
+    return res.status(200).json({
+      success: true,
+      message: "OTP Sent!",
+    });
   } catch (error) {
     next(error);
   }
 };
 
+/* =========================
+   VERIFY EMAIL
+========================= */
 export const verifyEmail = async (req, res, next) => {
   try {
     const { otp } = req.body;
     const user = await userModel.findById(req.user.id);
 
-    if (user.verifyOtp !== otp || user.verifyOtp === "") {
+    if (!user.verifyOtp || user.verifyOtp !== otp) {
       throw new CustomError("Invalid OTP", 400);
     }
+
     if (user.verifyOtpExpireAt < Date.now()) {
       throw new CustomError("OTP has expired", 400);
     }
@@ -146,21 +177,34 @@ export const verifyEmail = async (req, res, next) => {
     user.verifyOtpExpireAt = 0;
     await user.save();
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Email verified successfully" });
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
   } catch (error) {
     next(error);
   }
 };
 
-export const isAuthenticated = async (req, res, next) => {
-  return res.json({ success: true, userId: req.user.id, role: req.user.role, isAccountVerified: req.user.isAccountVerified });
+/* =========================
+   AUTH CHECK
+========================= */
+export const isAuthenticated = async (req, res) => {
+  return res.json({
+    success: true,
+    userId: req.user.id,
+    role: req.user.role,
+    isAccountVerified: req.user.isAccountVerified,
+  });
 };
 
+/* =========================
+   SEND RESET OTP
+========================= */
 export const sendResetOtp = async (req, res, next) => {
   try {
     const { email } = req.body;
+
     const user = await userModel.findOne({ email });
     if (!user) {
       throw new CustomError("User not found", 404);
@@ -168,32 +212,40 @@ export const sendResetOtp = async (req, res, next) => {
 
     const otp = String(Math.floor(100000 + Math.random() * 90000));
     user.resetOtp = otp;
-    user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    const html = PASSWORD_RESET_TEMPLATE.replace("{{otp}}", otp).replace(
-      "{{email}}",
-      email
-    );
+    const html = PASSWORD_RESET_TEMPLATE
+      .replace("{{otp}}", otp)
+      .replace("{{email}}", email);
+
     sendEmail(user.email, "Password Reset OTP - DevSource", html);
 
-    return res.status(200).json({ success: true, message: "OTP Sent!" });
+    return res.status(200).json({
+      success: true,
+      message: "OTP Sent!",
+    });
   } catch (error) {
     next(error);
   }
 };
 
+/* =========================
+   RESET PASSWORD
+========================= */
 export const resetPassword = async (req, res, next) => {
   try {
     const { email, otp, newPassword } = req.body;
-    const user = await userModel.findOne({ email });
 
+    const user = await userModel.findOne({ email });
     if (!user) {
       throw new CustomError("User not found", 404);
     }
-    if (user.resetOtp !== otp || user.resetOtp === "") {
+
+    if (!user.resetOtp || user.resetOtp !== otp) {
       throw new CustomError("Invalid OTP", 400);
     }
+
     if (user.resetOtpExpireAt < Date.now()) {
       throw new CustomError("OTP has expired", 400);
     }
@@ -203,9 +255,10 @@ export const resetPassword = async (req, res, next) => {
     user.resetOtpExpireAt = 0;
     await user.save();
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Password has been changed" });
+    return res.status(200).json({
+      success: true,
+      message: "Password has been changed",
+    });
   } catch (error) {
     next(error);
   }
