@@ -25,10 +25,9 @@ export default function Login() {
 
       // update context (persist user and token)
       try {
-        login(res.data.user, res.data.token);
+        login(res.data.user);
       } catch (err) {
         console.error("Login: failed to set context, falling back to localStorage", err);
-        localStorage.setItem("authToken", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
       }
 

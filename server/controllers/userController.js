@@ -1,6 +1,5 @@
 import userModel from "../models/userModel.js";
 import bcrypt from "bcryptjs";
-
 export const getUserData = async (req, res) => {
   try {
     const allUsers = await userModel.find({}, "name domain linkedin");
@@ -13,11 +12,18 @@ export const getUserData = async (req, res) => {
 
     res.json({
       success: true,
-      points: req.user?.points || 0, 
+      user: {
+        _id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        domain: req.user.domain,
+        points: req.user.points,
+        profilePicture: req.user.profilePicture,
+      },
       members: groupedMembers,
     });
   } catch (error) {
-    console.error("getUserData error:", error);
     res.status(500).json({ success: false });
   }
 };
