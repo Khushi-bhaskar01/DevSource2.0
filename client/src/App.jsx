@@ -5,10 +5,9 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 // Public Pages
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
-
-// User Pages
 import Home from "./pages/Home";
 import Members from "./pages/Members";
+// User Pages
 import ProfilePage from "./pages/ProfilePage";
 import Tasks from "./pages/Tasks";
 
@@ -26,22 +25,17 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* Protected User Routes */}
         <Route
           path="/"
           element={
-            <ProtectedRoute>
               <Home />
-            </ProtectedRoute>
           }
         />
 
         <Route
           path="/members"
           element={
-            <ProtectedRoute>
               <Members />
-            </ProtectedRoute>
           }
         />
 
