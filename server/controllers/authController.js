@@ -155,7 +155,7 @@ export const verifyEmail = async (req, res, next) => {
 };
 
 export const isAuthenticated = async (req, res, next) => {
-  return res.json({ success: true, userId: req.user.id, role: req.user.role });
+  return res.json({ success: true, userId: req.user.id, role: req.user.role, isAccountVerified: req.user.isAccountVerified });
 };
 
 export const sendResetOtp = async (req, res, next) => {

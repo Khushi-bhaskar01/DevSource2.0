@@ -6,8 +6,14 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 
+    isAccountVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     verifyOtp: { type: String, default: "" },
     verifyOtpExpireAt: { type: Number, default: 0 },
+
     resetOtp: { type: String, default: "" },
     resetOtpExpireAt: { type: Number, default: 0 },
 
@@ -17,6 +23,7 @@ const userSchema = new mongoose.Schema(
         earnedAt: { type: Date, default: Date.now },
       },
     ],
+
     aboutMe: { type: String, default: "" },
     linkedin: { type: String, default: "" },
     github: { type: String, default: "" },

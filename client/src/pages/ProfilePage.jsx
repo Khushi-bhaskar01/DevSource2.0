@@ -1,9 +1,12 @@
+// pages/ProfilePage.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { gsap } from "gsap";
 import Navbar from "../components/Navbar";
 import { BADGES } from "../data/badgeConfig";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axiosInstance";
+import EmailVerification from '../components/EmailVerification';
+import VerificationBanner from '../components/VerificationBanner';
 import { useAuth } from "../AuthContext";
 import {
   MapPin,
@@ -18,12 +21,14 @@ import {
   Code2,
   User,
   Link as LinkIcon,
+  Shield,
 } from "lucide-react";
 
 export default function ProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: authUser, loading: authLoading, logout, setUser: setAuthUser } = useAuth();
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const isPublicView = Boolean(id);
 
@@ -179,6 +184,14 @@ export default function ProfilePage() {
     }
   };
 
+  const handleVerificationSuccess = () => {
+    setShowVerificationModal(false);
+    setUser(prev => ({ ...prev, isAccountVerified: true }));
+    if (setAuthUser) {
+      setAuthUser(prev => ({ ...prev, isAccountVerified: true }));
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await api.post("/api/auth/logout");
@@ -237,6 +250,14 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-black text-white pt-24 px-4 sm:px-8">
       <Navbar />
 
+      {/* Verification Banner */}
+      {!isPublicView && (
+        <VerificationBanner 
+          user={user} 
+          onVerificationSuccess={handleVerificationSuccess}
+        />
+      )}
+
       <div className="max-w-7xl mx-auto mt-10">
         {/* Header */}
         <div className="mb-8">
@@ -253,18 +274,53 @@ export default function ProfilePage() {
           <div ref={leftCardRef} className="w-full lg:w-80 shrink-0">
             <div className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-6 sticky top-28">
               
-              {/* Avatar */}
-              <div className="w-24 h-24 rounded-full bg-linear-to-br from-purple-600 to-pink-600 mx-auto mb-4 overflow-hidden flex items-center justify-center border-4 border-zinc-800">
-                {user.profilePicture ? (
-                  <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl font-bold">{user.name?.[0]?.toUpperCase()}</span>
+              {/* Avatar with Verification Badge */}
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <div className="w-24 h-24 rounded-full bg-linear-to-br from-purple-600 to-pink-600 overflow-hidden flex items-center justify-center border-4 border-zinc-800">
+                  {user.profilePicture ? (
+                    <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl font-bold">{user.name?.[0]?.toUpperCase()}</span>
+                  )}
+                </div>
+                
+                {/* Green Checkmark Badge for Verified */}
+                {user.isAccountVerified && (
+                  <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-4 border-zinc-900">
+                    <CheckCircle size={16} className="text-white" />
+                  </div>
                 )}
               </div>
 
-              {/* Name & Stats */}
+              {/* Name & Verification Status */}
               <div className="text-center mb-6">
-                <h2 className="text-xl font-bold font-mono mb-1">{user.name}</h2>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <h2 className="text-xl font-bold font-mono">{user.name}</h2>
+                  {user.isAccountVerified && (
+                    <Shield size={16} className="text-green-400" title="Verified Account" />
+                  )}
+                </div>
+                
+                {/* Verification Alert for Unverified Users (Private View Only) */}
+                {!user.isAccountVerified && !isPublicView && (
+                  <button
+                    onClick={() => setShowVerificationModal(true)}
+                    className="mt-2 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-xs text-yellow-400 hover:bg-yellow-500/20 transition-colors font-mono flex items-center gap-2 mx-auto"
+                  >
+                    <Shield size={12} />
+                    Verify Email
+                  </button>
+                )}
+                
+                {/* Verified Badge (Public View) */}
+                {user.isAccountVerified && isPublicView && (
+                  <div className="mt-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-lg text-xs text-green-400 font-mono inline-flex items-center gap-2">
+                    <CheckCircle size={12} />
+                    Verified Account
+                  </div>
+                )}
+                
+                {/* Points & Badges Stats */}
                 <div className="flex items-center justify-center gap-4 text-sm text-gray-400 mt-3">
                   <div className="text-center">
                     <p className="text-xl font-bold font-mono text-purple-400">{user.points || 0}</p>
@@ -551,6 +607,15 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Email Verification Modal */}
+      {showVerificationModal && !isPublicView && (
+        <EmailVerification
+          user={user}
+          onVerificationSuccess={handleVerificationSuccess}
+          onClose={() => setShowVerificationModal(false)}
+        />
+      )}
     </div>
   );
 }
