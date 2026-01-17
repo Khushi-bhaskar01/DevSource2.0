@@ -1,4 +1,4 @@
-import CustomError from "../utils/CustomError.js";
+import CustomError from "../utils/customError.js";
 
 const errorMiddleware = (err, req, res, next) => {
   console.log(err.stack);
