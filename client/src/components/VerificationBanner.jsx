@@ -1,22 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { AlertCircle, X, Shield } from "lucide-react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import EmailVerification from "./EmailVerification";
 
 export default function VerificationBanner({ onVerificationSuccess }) {
   const [dismissed, setDismissed] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [isVerified, setIsVerified] = useState(true); // prevent flicker
+  const [isVerified, setIsVerified] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkVerification = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:4000/api/auth/is-auth",
-          { withCredentials: true }
-        );
-
+        const res = await api.get("/api/auth/is-auth");
         setIsVerified(res.data.user.isAccountVerified);
       } catch (err) {
         console.error("Failed to check verification", err);
@@ -30,11 +26,10 @@ export default function VerificationBanner({ onVerificationSuccess }) {
 
   const handleSuccess = () => {
     setShowModal(false);
-    setIsVerified(true); // hide banner instantly
+    setIsVerified(true);
     if (onVerificationSuccess) onVerificationSuccess();
   };
 
-  // Hide banner if loading, verified, or dismissed
   if (loading || isVerified || dismissed) return null;
 
   return (
