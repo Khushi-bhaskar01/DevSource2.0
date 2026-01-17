@@ -1,5 +1,5 @@
 import userModel from "../models/userModel.js";
-import CustomError from "../utils/CustomError.js";
+import CustomError from "../utils/customError.js";
 
 export const addAdmin = async (req, res, next) => {
   try {
