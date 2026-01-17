@@ -2,7 +2,7 @@ import userModel from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 export const getUserData = async (req, res) => {
   try {
-    const allUsers = await userModel.find({}, "name domain linkedin");
+    const allUsers = await userModel.find({}, "name domain linkedin points email role");
 
     const groupedMembers = {
       webDev: allUsers.filter((u) => u.domain?.includes("web")),
