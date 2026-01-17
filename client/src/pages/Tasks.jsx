@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { gsap } from "gsap";
 import Navbar from "../components/Navbar";
 import TaskCard from "../components/TaskCard";
 import TaskSubmitModal from "../components/TaskSubmitModal";
@@ -22,11 +23,36 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const headerRef = useRef(null);
+  const pointsRef = useRef(null);
+  const filtersRef = useRef(null);
+
+  useEffect(() => {
+    if (!authLoading && !loading) {
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+      );
+
+      gsap.fromTo(
+        pointsRef.current,
+        { opacity: 0, x: 20 },
+        { opacity: 1, x: 0, duration: 0.6, delay: 0.2, ease: "power2.out" }
+      );
+
+      gsap.fromTo(
+        filtersRef.current,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.6, delay: 0.3, ease: "power2.out" }
+      );
+    }
+  }, [authLoading, loading]);
+
   /* ================= FETCH DATA ================= */
   useEffect(() => {
     if (authLoading) return;
 
-    // Redirect to login if not authenticated
     if (!authUser?._id) {
       navigate("/login");
       return;
@@ -36,7 +62,6 @@ export default function Tasks() {
       try {
         setError("");
 
-        /* USER POINTS - get from authUser or fetch fresh */
         if (authUser.points !== undefined) {
           setUserPoints(authUser.points || 0);
         } else {
@@ -44,14 +69,12 @@ export default function Tasks() {
           setUserPoints(userRes.data?.userData?.points || userRes.data?.points || 0);
         }
 
-        /* TASKS */
         const taskRes = await api.get("/api/tasks");
         const tasksData = Array.isArray(taskRes.data) 
           ? taskRes.data 
           : taskRes.data?.tasks || [];
         setTasks(tasksData);
 
-        /* MY SUBMISSIONS */
         const submissionRes = await api.get("/api/submissions/my");
         const submissionsData = Array.isArray(submissionRes.data)
           ? submissionRes.data
@@ -59,7 +82,6 @@ export default function Tasks() {
 
         const map = {};
         submissionsData.forEach((sub) => {
-          // Handle both populated and non-populated taskId
           const taskId = sub.taskId?._id || sub.taskId || sub.task?._id || sub.task;
           if (taskId) {
             map[taskId] = sub;
@@ -71,7 +93,6 @@ export default function Tasks() {
         console.error("Tasks fetch error:", err);
         setError(err.response?.data?.message || "Failed to load tasks");
         
-        // If unauthorized, redirect to login
         if (err.response?.status === 401) {
           navigate("/login");
         }
@@ -95,16 +116,13 @@ export default function Tasks() {
 
       const newSubmission = res.data?.submission || res.data;
 
-      // Update submissions map
       setSubmissions((prev) => ({
         ...prev,
         [taskId]: newSubmission,
       }));
 
-      // Close modal
       setModalTask(null);
 
-      // Optionally refresh user points
       try {
         const userRes = await api.get("/api/user/data");
         setUserPoints(userRes.data?.userData?.points || userRes.data?.points || 0);
@@ -114,7 +132,7 @@ export default function Tasks() {
     } catch (err) {
       console.error("Submission error:", err);
       setError(err.response?.data?.message || "Failed to submit task");
-      throw err; // Re-throw so modal can handle it
+      throw err;
     }
   };
 
@@ -123,12 +141,7 @@ export default function Tasks() {
     if (t.domain !== activeDomain) return false;
 
     if (activeCategory === "Beginner" && t.points <= 50) return true;
-    if (
-      activeCategory === "Intermediate" &&
-      t.points > 50 &&
-      t.points <= 200
-    )
-      return true;
+    if (activeCategory === "Intermediate" && t.points > 50 && t.points <= 200) return true;
     if (activeCategory === "Advanced" && t.points > 200) return true;
 
     return false;
@@ -139,9 +152,15 @@ export default function Tasks() {
     return (
       <div className="min-h-screen bg-black text-white pt-24">
         <Navbar />
-        <p className="text-center animate-pulse font-[Zen_Dots] mt-10">
-          Loading tasks...
-        </p>
+        <div className="flex items-center justify-center mt-20">
+          <div className="flex items-center gap-3 px-6 py-3 bg-zinc-900 border border-zinc-700 rounded-lg">
+            <svg className="animate-spin h-5 w-5 text-purple-500" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <p className="font-mono text-sm text-gray-300">Loading tasks...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -151,71 +170,86 @@ export default function Tasks() {
     <div className="min-h-screen bg-black text-white pt-24 px-6">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto mt-10 space-y-6">
+      <div className="max-w-7xl mx-auto mt-10 space-y-8">
         {/* HEADER */}
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <h1 className="text-3xl font-[Zen_Dots]">Tasks</h1>
+        <div className="flex justify-between items-center flex-wrap gap-6">
+          <h1 
+            ref={headerRef}
+            className="text-4xl md:text-5xl font-bold font-mono text-white"
+          >
+            / tasks
+          </h1>
 
           {/* TOTAL POINTS */}
-          <div className="bg-green-500/20 border border-green-500 px-6 py-3 rounded-xl">
-            <p className="text-sm text-green-300">Total Points</p>
-            <p className="text-2xl font-bold text-green-400">
-              {userPoints} pts
+          <div 
+            ref={pointsRef}
+            className="bg-zinc-900 border-2 border-zinc-700 px-6 py-3 rounded-xl hover:border-purple-500/60 transition-colors"
+          >
+            <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">Total Points</p>
+            <p className="text-2xl font-bold font-mono text-white mt-1">
+              {userPoints.toLocaleString()}
             </p>
           </div>
         </div>
 
         {/* ERROR MESSAGE */}
         {error && (
-          <div className="bg-red-500/20 border border-red-500 px-4 py-3 rounded-lg">
-            <p className="text-red-300 text-sm">{error}</p>
+          <div className="bg-red-500/10 border-2 border-red-500/40 px-5 py-4 rounded-xl">
+            <p className="text-red-400 font-mono text-sm">{error}</p>
           </div>
         )}
 
-        {/* DOMAIN FILTER */}
-        <div className="flex gap-4 flex-wrap">
-          {DOMAINS.map((d) => (
-            <button
-              key={d}
-              onClick={() => setActiveDomain(d)}
-              className={`px-4 py-2 rounded-lg font-[Zen_Dots] uppercase text-sm transition ${
-                activeDomain === d
-                  ? "bg-pink-500 text-white"
-                  : "bg-white/10 hover:bg-white/20 text-white/80"
-              }`}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
+        {/* FILTERS */}
+        <div ref={filtersRef} className="space-y-4">
+          {/* DOMAIN FILTER */}
+          <div className="flex flex-wrap gap-3">
+            <span className="text-sm font-mono text-gray-500 self-center mr-2">Domain:</span>
+            {DOMAINS.map((d) => (
+              <button
+                key={d}
+                onClick={() => setActiveDomain(d)}
+                className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
+                  activeDomain === d
+                    ? "bg-purple-600 text-white border-2 border-purple-500"
+                    : "bg-zinc-900 text-gray-400 border-2 border-zinc-700 hover:border-zinc-600 hover:text-gray-300"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
 
-        {/* POINT FILTER */}
-        <div className="flex gap-4 flex-wrap">
-          {POINT_CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-lg font-[Zen_Dots] text-sm transition ${
-                activeCategory === cat
-                  ? "bg-green-500 text-white"
-                  : "bg-white/10 hover:bg-white/20 text-white/80"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {/* POINT FILTER */}
+          <div className="flex flex-wrap gap-3">
+            <span className="text-sm font-mono text-gray-500 self-center mr-2">Level:</span>
+            {POINT_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
+                  activeCategory === cat
+                    ? "bg-purple-600 text-white border-2 border-purple-500"
+                    : "bg-zinc-900 text-gray-400 border-2 border-zinc-700 hover:border-zinc-600 hover:text-gray-300"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* TASK GRID */}
         {filteredTasks.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-white/60 font-[Zen_Dots]">
-              No tasks found for {activeDomain.toUpperCase()} - {activeCategory}
-            </p>
+          <div className="text-center py-20">
+            <div className="inline-block bg-zinc-900 border-2 border-zinc-700 px-8 py-6 rounded-xl">
+              <p className="text-gray-400 font-mono">
+                No tasks found for <span className="text-purple-400">{activeDomain}</span> - <span className="text-purple-400">{activeCategory}</span>
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-            {filteredTasks.map((task) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-12">
+            {filteredTasks.map((task, index) => {
               const submission = submissions[task._id];
               return (
                 <TaskCard
@@ -223,10 +257,10 @@ export default function Tasks() {
                   task={task}
                   submission={submission || null}
                   onOpenSubmit={() => {
-                    // Don't allow resubmission if already submitted
                     if (submission) return;
                     setModalTask(task);
                   }}
+                  index={index}
                 />
               );
             })}
