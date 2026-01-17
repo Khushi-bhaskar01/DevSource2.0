@@ -158,22 +158,6 @@ export default function HeroSection() {
               Learn More
             </button>
           </div>
-
-          {/* Stats */}
-          <div className="mt-12 flex gap-8">
-            <div>
-              <div className="text-3xl font-bold text-purple-400 font-mono">100+</div>
-              <div className="text-sm text-gray-400">Projects Built</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-pink-400 font-mono">50+</div>
-              <div className="text-sm text-gray-400">Active Developers</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-green-400 font-mono">24/7</div>
-              <div className="text-sm text-gray-400">Support</div>
-            </div>
-          </div>
         </div>
 
         {/* Right Content - Code Editor */}

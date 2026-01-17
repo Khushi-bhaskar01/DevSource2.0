@@ -6,10 +6,12 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
-import Members from "./pages/Members";
+import Leaderboard from "./pages/Leaderboard";
+import ProjectWall from "./pages/ProjectWall";
 // User Pages
 import ProfilePage from "./pages/ProfilePage";
 import Tasks from "./pages/Tasks";
+import Members from "./pages/Members";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -35,7 +37,21 @@ export default function App() {
         <Route
           path="/members"
           element={
+            <ProtectedRoute>
               <Members />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+              <Leaderboard />
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+              <ProjectWall />
           }
         />
 

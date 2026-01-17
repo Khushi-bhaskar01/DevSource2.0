@@ -81,3 +81,25 @@ export const getMyUserTasks = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch user tasks' });
   }
 };
+// Public: anyone can access
+export const getPublicUsersData = async (req, res) => {
+  try {
+    const allUsers = await userModel.find(
+      {},
+      "name domain linkedin points profilePicture role"
+    );
+
+    const groupedMembers = {
+      webDev: allUsers.filter((u) => u.domain?.includes("web")),
+      gameDev: allUsers.filter((u) => u.domain?.includes("game")),
+      appDev: allUsers.filter((u) => u.domain?.includes("app")),
+    };
+
+    res.json({
+      success: true,
+      members: groupedMembers,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to fetch users" });
+  }
+};

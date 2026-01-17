@@ -41,21 +41,21 @@ export const createSubmission = async (req, res, next) => {
       status: "Pending",
     });
 
-    /* 🔔 Notify admins */
-    const user = await userModel.findById(userId);
-    const admins = await userModel.find({ role: "admin" });
+    // /* 🔔 Notify admins */
+    // const user = await userModel.findById(userId);
+    // const admins = await userModel.find({ role: "admin" });
 
-    for (const admin of admins) {
-      await sendEmail(
-        admin.email,
-        `New Submission: ${task.title}`,
-        `
-        <h3>New Task Submission</h3>
-        <p><b>User:</b> ${user.name} (${user.email})</p>
-        <p><b>Task:</b> ${task.title}</p>
-        `
-      );
-    }
+    // for (const admin of admins) {
+    //   await sendEmail(
+    //     admin.email,
+    //     `New Submission: ${task.title}`,
+    //     `
+    //     <h3>New Task Submission</h3>
+    //     <p><b>User:</b> ${user.name} (${user.email})</p>
+    //     <p><b>Task:</b> ${task.title}</p>
+    //     `
+    //   );
+    // }
 
     res.status(201).json({
       message: "Submission sent for review",
@@ -73,8 +73,6 @@ export const createSubmission = async (req, res, next) => {
 };
 
 
-// Admin updates submission status
-// Admin updates submission status
 export const updateSubmissionStatus = async (req, res, next) => {
   try {
     const { id } = req.params; // submission id
