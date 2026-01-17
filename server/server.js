@@ -23,7 +23,10 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173","https://dev-source2-0.vercel.app/"
+    origin: [
+      "http://localhost:5173",
+      "https://devsource2-0.vercel.app",
+    ],
     credentials: true,
   })
 );
