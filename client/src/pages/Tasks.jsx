@@ -137,15 +137,18 @@ export default function Tasks() {
   };
 
   /* ================= FILTER ================= */
-  const filteredTasks = tasks.filter((t) => {
-    if (t.domain !== activeDomain) return false;
+ const filteredTasks = tasks.filter((t) => {
+  if (!t.domain?.toLowerCase().includes(activeDomain)) return false;
 
-    if (activeCategory === "Beginner" && t.points <= 50) return true;
-    if (activeCategory === "Intermediate" && t.points > 50 && t.points <= 200) return true;
-    if (activeCategory === "Advanced" && t.points > 200) return true;
+  const points = Number(t.points) || 0;
 
-    return false;
-  });
+  if (activeCategory === "Beginner") return points <= 50;
+  if (activeCategory === "Intermediate") return points > 50 && points <= 200;
+  if (activeCategory === "Advanced") return points > 200;
+
+  return false;
+});
+
 
   /* ================= LOADING ================= */
   if (authLoading || loading) {
