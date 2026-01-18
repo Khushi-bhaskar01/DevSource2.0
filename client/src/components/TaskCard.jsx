@@ -2,10 +2,9 @@ import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 
 export default function TaskCard({ task, submission, onOpenSubmit, index }) {
-  const status = submission?.status || "Not Submitted";
-  const isSubmitted = !!submission;
   const cardRef = useRef(null);
 
+  /* ================= ANIMATION ================= */
   useEffect(() => {
     gsap.fromTo(
       cardRef.current,
@@ -20,35 +19,48 @@ export default function TaskCard({ task, submission, onOpenSubmit, index }) {
     );
   }, [index]);
 
+  /* ================= STATUS HANDLING ================= */
+  const rawStatus = submission?.status;
+
+  const status =
+    rawStatus === "Pending" ||
+    rawStatus === "Approved" ||
+    rawStatus === "Rejected"
+      ? rawStatus
+      : "Not Submitted";
+
+  const isSubmitted = !!submission;
+
   const statusConfig = {
-    Pending: { 
-      icon: "⏳", 
-      text: "Pending Review", 
+    Pending: {
+      icon: "⏳",
+      text: "Pending Review",
       color: "text-yellow-400",
-      borderColor: "border-yellow-500/40"
+      borderColor: "border-yellow-500/40",
     },
-    Approved: { 
-      icon: "✓", 
-      text: "Approved", 
+    Approved: {
+      icon: "✓",
+      text: "Approved",
       color: "text-green-400",
-      borderColor: "border-green-500/40"
+      borderColor: "border-green-500/40",
     },
-    Rejected: { 
-      icon: "✗", 
-      text: "Rejected", 
+    Rejected: {
+      icon: "✗",
+      text: "Rejected",
       color: "text-red-400",
-      borderColor: "border-red-500/40"
+      borderColor: "border-red-500/40",
     },
-    "Not Submitted": { 
-      icon: "○", 
-      text: "Open", 
+    "Not Submitted": {
+      icon: "○",
+      text: "Open",
       color: "text-gray-400",
-      borderColor: "border-gray-600/40"
-    }
+      borderColor: "border-gray-600/40",
+    },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig["Not Submitted"];
 
+  /* ================= RENDER ================= */
   return (
     <div
       ref={cardRef}
@@ -59,7 +71,7 @@ export default function TaskCard({ task, submission, onOpenSubmit, index }) {
       }`}
     >
       <div className="p-5 space-y-4">
-        {/* Header with Domain Badge */}
+        {/* HEADER */}
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-lg font-semibold text-white leading-tight flex-1 font-mono">
             {task.title}
@@ -69,24 +81,26 @@ export default function TaskCard({ task, submission, onOpenSubmit, index }) {
           </span>
         </div>
 
-        {/* Description */}
+        {/* DESCRIPTION */}
         <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
           {task.description}
         </p>
 
-        {/* Points */}
+        {/* POINTS */}
         <div className="flex items-center gap-2">
           <span className="px-3 py-1.5 text-sm font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded">
             {task.points} pts
           </span>
         </div>
 
-        {/* Divider */}
+        {/* DIVIDER */}
         <div className="border-t border-zinc-800" />
 
-        {/* Status & Button */}
+        {/* STATUS + ACTION */}
         <div className="flex items-center justify-between gap-3">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded border ${config.borderColor} bg-black/20`}>
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded border ${config.borderColor} bg-black/20`}
+          >
             <span className={`${config.color} text-sm font-mono`}>
               {config.icon}
             </span>
@@ -109,7 +123,6 @@ export default function TaskCard({ task, submission, onOpenSubmit, index }) {
         </div>
       </div>
 
-      {/* Subtle corner accent - only on hover for non-submitted */}
       {!isSubmitted && (
         <div className="absolute top-0 right-0 w-16 h-16 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
           <div className="absolute top-0 right-0 w-full h-full bg-linear-to-bl from-purple-500/20 to-transparent rounded-xl" />
