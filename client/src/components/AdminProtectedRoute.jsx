@@ -19,8 +19,8 @@ export default function AdminProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to home if not admin
-  if (user.role !== "admin") {
+  // Redirect to home if not admin or superadmin
+  if (user.role !== "admin" && user.role !== "superadmin") {
     return <Navigate to="/" replace />;
   }
 

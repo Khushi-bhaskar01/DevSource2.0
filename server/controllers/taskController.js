@@ -14,18 +14,22 @@ export const createTask = async (req, res, next) => {
       deadline,
     });
 
-    //email noti to users
     await task.save();
-    const users = await userModel.find({
-      domain: task.domain,
-      role: "student",
-    });
 
-    for (const user of users) {
-      const html = taskAssignedTemplate(user, task);
-      await sendEmail(user.email, `New Task Assigned: ${task.title}`, html);
+    // email noti to users (Resilient: don't crash if mail fails)
+    try {
+      const users = await userModel.find({
+        domain: task.domain,
+        role: "student",
+      });
+
+      for (const user of users) {
+        const html = taskAssignedTemplate(user, task);
+        await sendEmail(user.email, `New Task Assigned: ${task.title}`, html);
+      }
+    } catch (mailError) {
+      console.error("TASK_NOTIFICATION_FAILURE:", mailError);
     }
-    //
 
     res.status(201).json({ message: "Task created successfully", task });
   } catch (error) {

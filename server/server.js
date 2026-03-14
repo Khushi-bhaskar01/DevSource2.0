@@ -34,6 +34,7 @@ app.use(
 );
 
 app.get("/", (req, res) => res.send("Api Working!"));
+app.get("/ping", (req, res) => res.send("pong"));
 
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);

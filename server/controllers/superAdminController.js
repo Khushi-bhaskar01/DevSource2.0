@@ -5,9 +5,11 @@ export const addAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    // 1. Check if requester is the Super Admin
-    //    Or, keep your email check:
-    if (req.user.role !== "superadmin") {
+    // 1. Check if requester is the Super Admin (Direct role or ENV match)
+    const isSuper = req.user.role === "superadmin" || 
+                    req.user.email.toLowerCase() === process.env.SUPER_ADMIN_EMAIL?.toLowerCase();
+                    
+    if (!isSuper) {
       throw new CustomError("Access denied. Not a Super Admin.", 403);
     }
 
@@ -39,8 +41,11 @@ export const removeAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    // 1. Check if requester is the Super Admin
-    if (req.user.role !== "superadmin") {
+    // 1. Check if requester is the Super Admin (Direct role or ENV match)
+    const isSuper = req.user.role === "superadmin" || 
+                    req.user.email.toLowerCase() === process.env.SUPER_ADMIN_EMAIL?.toLowerCase();
+                    
+    if (!isSuper) {
       throw new CustomError("Access denied. Not a Super Admin.", 403);
     }
 

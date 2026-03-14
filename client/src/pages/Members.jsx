@@ -1,85 +1,26 @@
-import React, { useEffect, useState, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { FaLinkedin } from "react-icons/fa";
+import React, { useEffect, useState, useMemo } from "react";
+import { motion } from "framer-motion";
+import { Search, Hash, Github, Linkedin, ExternalLink } from "lucide-react";
 import Navbar from "../components/Navbar";
-
-gsap.registerPlugin(ScrollTrigger);
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:4000";
-
-const MemberCard = ({ name, linkedin, index }) => {
-  const cardRef = useRef(null);
-
-  useEffect(() => {
-    gsap.fromTo(
-      cardRef.current,
-      { opacity: 0, y: 20 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.5,
-        delay: index * 0.1,
-        ease: "power2.out",
-      }
-    );
-  }, [index]);
-
-  return (
-    <div
-      ref={cardRef}
-      className="bg-linear-to-r from-purple-900/40 to-pink-900/40 backdrop-blur-sm rounded-xl py-3 px-4 mb-3 flex justify-between items-center text-sm text-white/90 border border-purple-500/20 hover:border-pink-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
-    >
-      <span className="truncate font-medium">{name}</span>
-      {linkedin && (
-        <a
-          href={linkedin}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-pink-400 hover:text-pink-300 transition-colors duration-200"
-        >
-          <FaLinkedin size={18} />
-        </a>
-      )}
-    </div>
-  );
-};
+import api from "../api/axiosInstance";
+import Footer from "../components/Footer";
 
 const Members = () => {
   const [members, setMembers] = useState({
     webDev: [],
     gameDev: [],
     appDev: [],
+    other: [],
   });
-
   const [loading, setLoading] = useState(true);
-  const titleRef = useRef(null);
-  const columnsRef = useRef([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/user/data`, {
-          method: "GET",
-          credentials: "include", 
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error(`Request failed with status ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        if (data.success && data.members) {
-          setMembers({
-            webDev: data.members.webDev || [],
-            gameDev: data.members.gameDev || [],
-            appDev: data.members.appDev || [],
-          });
+        const res = await api.get("/api/user/public");
+        if (res.data.success) {
+          setMembers(res.data.members);
         }
       } catch (error) {
         console.error("Error fetching members:", error);
@@ -87,115 +28,109 @@ const Members = () => {
         setLoading(false);
       }
     };
-
     fetchMembers();
   }, []);
 
-  useEffect(() => {
-    if (!loading) {
-      gsap.fromTo(
-        titleRef.current,
-        { opacity: 0, y: -50, scale: 0.8 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 1,
-          ease: "elastic.out(1, 0.5)",
-        }
-      );
-
-      columnsRef.current.forEach((col, i) => {
-        if (!col) return;
-
-        gsap.fromTo(
-          col,
-          { opacity: 0, y: 100, rotateX: -15 },
-          {
-            opacity: 1,
-            y: 0,
-            rotateX: 0,
-            duration: 0.8,
-            delay: 0.3 + i * 0.2,
-            ease: "power3.out",
-          }
-        );
-
-        const glowDiv = col.querySelector(".glow-container");
-        if (glowDiv) {
-          gsap.to(glowDiv, {
-            boxShadow:
-              i === 0
-                ? "0 0 40px rgba(168, 85, 247, 0.4)"
-                : i === 1
-                ? "0 0 40px rgba(236, 72, 153, 0.4)"
-                : "0 0 40px rgba(6, 182, 212, 0.4)",
-            duration: 2 + i * 0.3,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut",
-          });
-        }
-      });
-    }
-  }, [loading]);
+  const allMembersList = useMemo(() => {
+    const list = [...members.webDev, ...members.gameDev, ...members.appDev, ...members.other];
+    return list.filter(m => 
+      m.role !== 'admin' && 
+      m.role !== 'superadmin' &&
+      m.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a,b) => (b.points || 0) - (a.points || 0));
+  }, [members, searchTerm]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-black via-purple-950/20 to-black text-white flex items-center justify-center font-[Zen_Dots]">
-        <div className="text-2xl bg-linear-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent animate-pulse">
-          Loading members...
-        </div>
+      <div className="min-h-screen bg-black text-white flex items-center justify-center font-black uppercase tracking-[0.5em] text-[10px]">
+        SCANNING_DATABASE...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-black via-purple-950/20 to-black text-white overflow-x-hidden relative">
+    <div className="min-h-screen bg-black text-white selection:bg-premium-accent/30 font-inter">
       <Navbar />
 
-      <div className="relative z-10">
-        <h1
-          ref={titleRef}
-          className="text-center font-[monospace] text-6xl md:text-7xl mt-24 tracking-wider font-bold bg-linear-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent"
-        >
-          MEMBERS
-        </h1>
+      <div className="max-w-5xl mx-auto px-6 pt-40 pb-40">
+        <header className="mb-24 border-b border-white/5 pb-10 flex flex-col md:flex-row md:items-end justify-between gap-12">
+          <div className="max-w-2xl">
+            <span className="text-zinc-500 font-black uppercase tracking-[0.4em] text-[9px] block mb-4">/ DIRECTORY</span>
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase leading-none">
+              THE <span className="text-zinc-600 transition-colors hover:text-white">UNITS</span>.
+            </h1>
+          </div>
+          <div className="relative w-full md:w-64 group text-2xl">
+            <input 
+              type="text" 
+              placeholder="FILTER_BY_NAME..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-transparent border-b border-white/10 py-3 outline-none focus:border-white/30 transition-all font-black uppercase tracking-widest text-[9px]"
+            />
+          </div>
+        </header>
 
-        <div className="flex justify-center gap-8 mt-20 px-8 flex-wrap pb-20">
-          {[
-            { key: "gameDev", label: "🎮 Game Dev", color: "yellow" },
-            { key: "webDev", label: "💻 Web Dev", color: "pink" },
-            { key: "appDev", label: "📱 App Dev", color: "cyan" },
-          ].map((section, i) => (
-            <div
-              key={section.key}
-              ref={(el) => (columnsRef.current[i] = el)}
-              className="flex flex-col items-center"
-            >
-              <div className="glow-container w-72 h-[480px] rounded-3xl overflow-y-auto p-5">
-                {members[section.key].length ? (
-                  members[section.key].map((m, idx) => (
-                    <MemberCard
-                      key={m._id}
-                      name={m.name}
-                      linkedin={m.linkedin}
-                      index={idx}
-                    />
-                  ))
-                ) : (
-                  <p className="text-white/40 text-sm text-center mt-8">
-                    No members yet
-                  </p>
-                )}
-              </div>
-              <div className="mt-6 text-xl font-[Zen_Dots]">
-                {section.label}
-              </div>
-            </div>
-          ))}
+        {/* Extreme Minimalist List View */}
+        <div className="divide-y divide-white/5 border-t border-b border-white/5">
+           {allMembersList.map((member, idx) => (
+             <motion.div 
+               key={member._id}
+               initial={{ opacity: 0 }}
+               whileInView={{ opacity: 1 }}
+               className="group grid grid-cols-1 md:grid-cols-12 items-center py-6 hover:bg-white/2 transition-all px-4"
+             >
+                <div className="md:col-span-1 text-[9px] font-black text-zinc-600 group-hover:text-premium-accent transition-colors">
+                   {idx + 1 < 10 ? `0${idx+1}` : idx+1}
+                </div>
+                
+                <div className="md:col-span-5">
+                   <h3 className="text-lg font-black uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform inline-block">
+                      {member.name}
+                   </h3>
+                </div>
+
+                <div className="md:col-span-4 flex gap-2">
+                   {member.domain?.map(d => (
+                      <span key={d} className="text-[8px] font-black text-zinc-600 uppercase tracking-widest bg-white/5 px-2 py-0.5 border border-white/5">
+                         {d}
+                      </span>
+                   ))}
+                </div>
+
+                <div className="md:col-span-2 text-right">
+                   <div className="flex items-center justify-end gap-5">
+                      <span className="text-[10px] font-black text-white">{member.points} XP</span>
+                      <div className="flex items-center gap-3">
+                         {member.github && (
+                            <a href={member.github} target="_blank" rel="noopener noreferrer" className="text-zinc-700 hover:text-white transition-colors">
+                               <Github size={13} />
+                            </a>
+                         )}
+                         {member.linkedin && (
+                            <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-zinc-700 hover:text-white transition-colors">
+                               <Linkedin size={13} />
+                            </a>
+                         )}
+                         {!member.github && !member.linkedin && member.externalLink && (
+                            <a href={member.externalLink} target="_blank" rel="noopener noreferrer" className="text-zinc-700 hover:text-white transition-colors">
+                               <ExternalLink size={13} />
+                            </a>
+                         )}
+                      </div>
+                   </div>
+                </div>
+             </motion.div>
+           ))}
         </div>
+
+        {allMembersList.length === 0 && (
+          <div className="py-40 text-center">
+            <p className="font-black text-[9px] uppercase tracking-[1em] text-zinc-600">ZERO_MATCHES</p>
+          </div>
+        )}
       </div>
+      <Footer />
     </div>
   );
 };

@@ -1,621 +1,269 @@
-// pages/ProfilePage.jsx
-import React, { useEffect, useState, useRef } from "react";
-import { gsap } from "gsap";
-import Navbar from "../components/Navbar";
-import { BADGES } from "../data/badgeConfig";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../api/axiosInstance";
-import EmailVerification from '../components/EmailVerification';
-import VerificationBanner from '../components/VerificationBanner';
+import { motion, AnimatePresence } from "framer-motion";
+import { FaLinkedin, FaGithub, FaAward, FaEdit, FaLink, FaMapMarkerAlt, FaCode } from "react-icons/fa";
+import { Terminal, Award, Cpu, ShieldCheck, LogOut, Share2, Check } from "lucide-react";
+import Navbar from "../components/Navbar";
 import { useAuth } from "../AuthContext";
-import {
-  MapPin,
-  GraduationCap,
-  Linkedin,
-  Github,
-  Copy,
-  Edit3,
-  CheckCircle,
-  LogOut,
-  Award,
-  Code2,
-  User,
-  Link as LinkIcon,
-  Shield,
-} from "lucide-react";
+import { ScribbleDoodle, CircleDoodle } from "../components/Doodles";
+import api from "../api/axiosInstance";
+import { BADGES } from "../data/badgeConfig";
 
 export default function ProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user: authUser, loading: authLoading, logout, setUser: setAuthUser } = useAuth();
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-
-  const isPublicView = Boolean(id);
-
+  const { user: authUser, loading: authLoading, logout } = useAuth();
   const [user, setUser] = useState(null);
-  const [form, setForm] = useState({
-    aboutMe: "",
-    location: "",
-    branch: "",
-    year: "",
-    linkedin: "",
-    github: "",
-    domain: [],
-  });
-
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [copyLabel, setCopyLabel] = useState("Copy Link");
+  const [copied, setCopied] = useState(false);
 
-  const leftCardRef = useRef(null);
-  const rightSectionRef = useRef(null);
-  const badgesRef = useRef(null);
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
-  // Animations
+  const copyPublicUrl = () => {
+    const url = `${window.location.origin}/profile/${user._id}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Calculate unlocked badges based on points
+  const unlockedBadges = user 
+    ? BADGES.filter(badge => (user.points || 0) >= badge.points)
+    : [];
+
   useEffect(() => {
-    if (!loading && user) {
-      gsap.fromTo(
-        leftCardRef.current,
-        { opacity: 0, x: -30 },
-        { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }
-      );
-
-      gsap.fromTo(
-        rightSectionRef.current,
-        { opacity: 0, x: 30 },
-        { opacity: 1, x: 0, duration: 0.6, delay: 0.2, ease: "power2.out" }
-      );
-
-      if (badgesRef.current) {
-        gsap.fromTo(
-          badgesRef.current.children,
-          { opacity: 0, scale: 0.8 },
-          {
-            opacity: 1,
-            scale: 1,
-            duration: 0.4,
-            stagger: 0.05,
-            ease: "back.out(1.4)",
-            delay: 0.4,
-          }
-        );
+    const fetchUser = async () => {
+      // Determine which ID to use: from URL params or from auth state
+      const targetId = id || authUser?._id;
+      
+      if (!targetId) {
+        if (!authLoading) setLoading(false);
+        return;
       }
-    }
-  }, [loading, user]);
 
-  // ---------------- FETCH PROFILE ----------------
-  useEffect(() => {
-    if (authLoading) return;
-
-    const fetchProfile = async () => {
       try {
-        let targetId;
-
-        // 🔐 PRIVATE PROFILE
-        if (!isPublicView) {
-          if (!authUser?._id) {
-            navigate("/login");
-            return;
-          }
-          targetId = authUser._id;
-        } 
-        // 🌍 PUBLIC PROFILE
-        else {
-          targetId = id;
-        }
-
-        const res = await api.get(`/api/user/${targetId}`);
-        const u = res.data?.user || res.data;
-
-        setUser(u);
-        setForm({
-          aboutMe: u.aboutMe || "",
-          location: u.location || "",
-          branch: u.branch || "",
-          year: u.year || "",
-          linkedin: u.linkedin || "",
-          github: u.github || "",
-          domain: u.domain || [],
-        });
-
-        // CRITICAL: Update auth context for private view to persist data
-        if (!isPublicView && setAuthUser) {
-          setAuthUser(u);
-        }
+        setLoading(true);
+        // Use public endpoint if id is in URL, otherwise use protected user endpoint
+        const endpoint = id ? `/api/profile/${id}` : `/api/user/${targetId}`;
+        const res = await api.get(endpoint);
+        // Backend might return { success, user } or just user
+        setUser(res.data.user || res.data);
       } catch (err) {
-        console.error("Profile fetch failed", err);
-        setError(err.response?.data?.message || "Failed to load profile");
-        if (!isPublicView) {
-          navigate("/login");
-        }
+        console.error("Profile Fetch Error:", err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchProfile();
-  }, [id, isPublicView, authLoading, authUser?._id, navigate, setAuthUser]);
-
-  // ---------------- HANDLERS ----------------
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const toggleDomain = (d) => {
-    setForm((prev) => ({
-      ...prev,
-      domain: prev.domain.includes(d)
-        ? prev.domain.filter((x) => x !== d)
-        : [...prev.domain, d],
-    }));
-  };
-
-  const handleSave = async (e) => {
-    if (e) e.preventDefault();
-    setSaving(true);
-    setError("");
-
-    try {
-      const res = await api.put(`/api/user/${user._id}`, form);
-      const updated = res.data?.user || res.data;
-      
-      setUser(updated);
-      setForm({
-        aboutMe: updated.aboutMe || "",
-        location: updated.location || "",
-        branch: updated.branch || "",
-        year: updated.year || "",
-        linkedin: updated.linkedin || "",
-        github: updated.github || "",
-        domain: updated.domain || [],
-      });
-      
-      if (setAuthUser) {
-        setAuthUser(updated);
-      }
-      
-      setError("");
-    } catch (err) {
-      console.error("Save failed", err);
-      setError(err.response?.data?.message || "Failed to save changes");
-    } finally {
-      setSaving(false);
+    
+    if (!authLoading) {
+      fetchUser();
     }
-  };
+  }, [id, authUser, authLoading]);
 
-  const handleVerificationSuccess = () => {
-    setShowVerificationModal(false);
-    setUser(prev => ({ ...prev, isAccountVerified: true }));
-    if (setAuthUser) {
-      setAuthUser(prev => ({ ...prev, isAccountVerified: true }));
-    }
-  };
+  if (loading || authLoading) return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center font-black uppercase tracking-[0.5em] text-xs">
+      <motion.div animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+        Accessing Archive :: {id?.slice(-6).toUpperCase() || "OWN"}
+      </motion.div>
+    </div>
+  );
 
-  const handleLogout = async () => {
-    try {
-      await api.post("/api/auth/logout");
-      logout();
-      navigate("/login");
-    } catch (err) {
-      console.error("Logout failed", err);
-      logout();
-      navigate("/login");
-    }
-  };
+  if (!user) return (
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-8">
+       <h1 className="text-4xl font-black uppercase tracking-tighter">Identity Not Found</h1>
+       <button onClick={() => navigate("/")} className="text-[10px] font-black uppercase tracking-[0.4em] text-premium-accent border border-premium-accent/20 px-8 py-3 hover:bg-premium-accent hover:text-white transition-all">RETURN TO CORE</button>
+    </div>
+  );
 
-  const publicLink = user && `${window.location.origin}/profile/${user._id}`;
+  const isOwner = authUser?._id === user._id;
 
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(publicLink);
-      setCopyLabel("Copied!");
-      setTimeout(() => setCopyLabel("Copy Link"), 1500);
-    } catch {
-      setCopyLabel("Failed!");
-      setTimeout(() => setCopyLabel("Copy Link"), 1500);
-    }
-  };
-
-  // ---------------- UI STATES ----------------
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="flex items-center gap-3 px-6 py-3 bg-zinc-900 border border-zinc-700 rounded-lg">
-          <svg className="animate-spin h-5 w-5 text-purple-500" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <p className="font-mono text-sm text-gray-300">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="bg-zinc-900 border-2 border-zinc-700 px-8 py-6 rounded-xl">
-          <p className="font-mono text-gray-300">{error || "User not found"}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculate unlocked badges
-  const unlockedCount = BADGES.filter(b => Number(user.points || 0) >= Number(b.points)).length;
-
-  // ---------------- UI ----------------
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-4 sm:px-8">
+    <div className="min-h-screen bg-black text-white selection:bg-premium-accent/30 font-inter">
       <Navbar />
 
-      {/* Verification Banner */}
-      {!isPublicView && (
-        <VerificationBanner 
-          user={user} 
-          onVerificationSuccess={handleVerificationSuccess}
-        />
-      )}
-
-      <div className="max-w-7xl mx-auto mt-10">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold font-mono text-white mb-2">
-            {isPublicView ? "/ public-profile" : "/ profile"}
-          </h1>
-          <p className="text-gray-500 font-mono text-sm">
-            {isPublicView ? `Viewing ${user.name}'s profile` : "Manage your developer profile"}
-          </p>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* LEFT CARD */}
-          <div ref={leftCardRef} className="w-full lg:w-80 shrink-0">
-            <div className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-6 sticky top-28">
-              
-              {/* Avatar with Verification Badge */}
-              <div className="relative w-24 h-24 mx-auto mb-4">
-                <div className="w-24 h-24 rounded-full bg-linear-to-br from-purple-600 to-pink-600 overflow-hidden flex items-center justify-center border-4 border-zinc-800">
-                  {user.profilePicture ? (
-                    <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-3xl font-bold">{user.name?.[0]?.toUpperCase()}</span>
-                  )}
-                </div>
-                
-                {/* Green Checkmark Badge for Verified */}
-                {user.isAccountVerified && (
-                  <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-4 border-zinc-900">
-                    <CheckCircle size={16} className="text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Name & Verification Status */}
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <h2 className="text-xl font-bold font-mono">{user.name}</h2>
-                  {user.isAccountVerified && (
-                    <Shield size={16} className="text-green-400" title="Verified Account" />
-                  )}
-                </div>
-                
-                {/* Verification Alert for Unverified Users (Private View Only) */}
-                {!user.isAccountVerified && !isPublicView && (
-                  <button
-                    onClick={() => setShowVerificationModal(true)}
-                    className="mt-2 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-xs text-yellow-400 hover:bg-yellow-500/20 transition-colors font-mono flex items-center gap-2 mx-auto"
-                  >
-                    <Shield size={12} />
-                    Verify Email
-                  </button>
-                )}
-                
-                {/* Verified Badge (Public View) */}
-                {user.isAccountVerified && isPublicView && (
-                  <div className="mt-2 px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-lg text-xs text-green-400 font-mono inline-flex items-center gap-2">
-                    <CheckCircle size={12} />
-                    Verified Account
-                  </div>
-                )}
-                
-                {/* Points & Badges Stats */}
-                <div className="flex items-center justify-center gap-4 text-sm text-gray-400 mt-3">
-                  <div className="text-center">
-                    <p className="text-xl font-bold font-mono text-purple-400">{user.points || 0}</p>
-                    <p className="text-xs">Points</p>
-                  </div>
-                  <div className="w-px h-8 bg-zinc-700"></div>
-                  <div className="text-center">
-                    <p className="text-xl font-bold font-mono text-purple-400">{unlockedCount}/{BADGES.length}</p>
-                    <p className="text-xs">Badges</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Info */}
-              <div className="space-y-3 mb-6">
-                {user.location && (
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <MapPin size={16} className="text-gray-500" />
-                    <span>{user.location}</span>
-                  </div>
-                )}
-
-                {user.branch && (
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <GraduationCap size={16} className="text-gray-500" />
-                    <span>{user.branch} {user.year && `• ${user.year}`}</span>
-                  </div>
-                )}
-
-                {user.domain && user.domain.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <Code2 size={16} className="text-gray-500" />
-                    <div className="flex flex-wrap gap-2">
-                      {user.domain.map((d) => (
-                        <span key={d} className="px-2 py-0.5 bg-purple-600/20 text-purple-300 rounded text-xs font-mono border border-purple-500/30">
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-zinc-800 mb-6"></div>
-
-              {/* Links */}
-              <div className="space-y-2 mb-6">
-                {user.linkedin && (
-                  <button 
-                    onClick={() => window.open(user.linkedin, "_blank")} 
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors"
-                  >
-                    <Linkedin size={16} className="text-blue-400" />
-                    <span>LinkedIn</span>
-                  </button>
-                )}
-                {user.github && (
-                  <button 
-                    onClick={() => window.open(user.github, "_blank")} 
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors"
-                  >
-                    <Github size={16} className="text-gray-400" />
-                    <span>GitHub</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Copy Link */}
-              <button 
-                onClick={copyLink} 
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/30 rounded-lg text-sm transition-colors mb-3"
-              >
-                <Copy size={14} /> 
-                <span className="font-mono">{copyLabel}</span>
-              </button>
-
-              {/* Logout */}
-              {!isPublicView && (
-                <button
+      <main className="relative z-10 max-w-7xl mx-auto px-6 pt-40 pb-20">
+        <header className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-12">
+          <div className="max-w-3xl">
+            <motion.span 
+               initial={{ opacity: 0 }} 
+               animate={{ opacity: 1 }} 
+               className="text-zinc-500 font-black uppercase tracking-[0.4em] text-[10px] block mb-6"
+            >
+              / ARCHIVE :: {user._id.slice(-6).toUpperCase()}
+            </motion.span>
+            <h1 className="text-6xl md:text-[8rem] font-black tracking-tighter uppercase leading-[0.85] relative">
+              {user.name.split(' ')[0]} <span className="text-zinc-800">{user.name.split(' ')[1] || 'ARCHITECT'}</span>.
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-4 md:gap-6">
+             {isOwner && (
+               <>
+                 <button 
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors"
-                >
-                  <LogOut size={16} /> 
-                  <span className="font-mono">Logout</span>
-                </button>
-              )}
-            </div>
+                  className="p-4 rounded-full border border-red-500/20 text-red-500/50 hover:text-red-500 hover:border-red-500 transition-all group relative"
+                  title="TERMINATE SESSION"
+                 >
+                   <LogOut size={18} />
+                 </button>
+                 <button 
+                  onClick={() => navigate("/settings")}
+                  className="p-4 rounded-full border border-white/10 hover:border-premium-accent hover:text-premium-accent transition-all group"
+                  title="EDIT CONFIG"
+                 >
+                   <FaEdit size={18} />
+                 </button>
+               </>
+             )}
+             
+             <button 
+               onClick={copyPublicUrl}
+               className={`p-4 rounded-full border transition-all flex items-center gap-3 group relative ${
+                 copied ? "border-green-500 text-green-500" : "border-white/10 text-zinc-500 hover:border-white/30 hover:text-white"
+               }`}
+             >
+               {copied ? <Check size={18} /> : <Share2 size={18} />}
+               <AnimatePresence>
+                 {copied && (
+                   <motion.span 
+                     initial={{ opacity: 0, x: 10 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, x: 10 }}
+                     className="absolute -top-10 right-0 bg-green-500 text-black text-[8px] font-black py-1 px-3 uppercase tracking-widest whitespace-nowrap"
+                   >
+                     LINK_COPIED
+                   </motion.span>
+                 )}
+               </AnimatePresence>
+             </button>
+
+             <div className="text-right ml-4 md:ml-8">
+                <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-2">XP PRIORITY</span>
+                <p className="text-3xl font-black text-white uppercase">{user.points?.toLocaleString() || 0}</p>
+             </div>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-px bg-white/5 border border-white/5">
+          {/* Portrait Column */}
+          <div className="lg:col-span-4 bg-black p-12 flex flex-col items-center text-center space-y-12 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-5">
+                <CircleDoodle className="w-64 h-64" color="#ef5d47" />
+             </div>
+             
+             <div className="relative w-64 h-64 rounded-full overflow-hidden border border-white/10 grayscale hover:grayscale-0 transition-all duration-700 group">
+                <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-6xl font-black text-white transition-all duration-500 group-hover:text-premium-accent">
+                   {user.name.charAt(0).toUpperCase()}
+                </div>
+                {user.profilePicture && (
+                  <img 
+                    src={user.profilePicture} 
+                    alt={user.name}
+                    className="absolute inset-0 w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700"
+                  />
+                )}
+                <div className="absolute inset-0 bg-premium-accent/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+             </div>
+
+             <div className="space-y-4 relative">
+                <div className="flex items-center justify-center gap-2 mb-8">
+                   <ShieldCheck className="text-premium-accent" size={16} />
+                   <span className="text-[10px] font-black text-premium-accent uppercase tracking-widest">VERIFIED IDENTITY</span>
+                </div>
+                
+                <div className="space-y-2">
+                   <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">DOMAIN SECTOR</p>
+                   <div className="flex flex-wrap justify-center gap-2">
+                      {user.domain?.map(d => (
+                         <span key={d} className="px-4 py-2 bg-zinc-900 border border-white/5 text-[10px] font-black uppercase tracking-widest">{d}</span>
+                      ))}
+                   </div>
+                </div>
+             </div>
           </div>
 
-          {/* RIGHT SECTION */}
-          <div ref={rightSectionRef} className="flex-1 space-y-6">
-            {error && (
-              <div className="bg-red-500/10 border-2 border-red-500/40 px-5 py-4 rounded-xl">
-                <p className="text-red-400 font-mono text-sm">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSave} className="space-y-6">
-              {/* ABOUT ME */}
-              <section className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <User size={18} className="text-purple-500" />
-                    <h3 className="font-mono font-bold text-lg">About Me</h3>
-                  </div>
-                  {!isPublicView && <Edit3 size={16} className="text-gray-500" />}
-                </div>
-                <textarea
-                  name="aboutMe"
-                  value={form.aboutMe}
-                  disabled={isPublicView}
-                  onChange={handleChange}
-                  placeholder="Tell the world about yourself..."
-                  className="w-full min-h-[140px] bg-black border-2 border-zinc-700 rounded-lg p-4 text-sm disabled:opacity-60 disabled:cursor-not-allowed focus:border-purple-500/60 transition-colors font-mono resize-none"
-                />
-              </section>
-
-              {/* BASIC INFO */}
-              <section className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <GraduationCap size={18} className="text-purple-500" />
-                  <h3 className="font-mono font-bold text-lg">Basic Info</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-xs text-gray-500 font-mono mb-1 block">LOCATION</label>
-                    <input
-                      name="location"
-                      value={form.location}
-                      onChange={handleChange}
-                      disabled={isPublicView}
-                      placeholder="City, Country"
-                      className="w-full bg-black border-2 border-zinc-700 rounded-lg px-3 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed focus:border-purple-500/60 transition-colors font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-gray-500 font-mono mb-1 block">BRANCH</label>
-                    <input
-                      name="branch"
-                      value={form.branch}
-                      onChange={handleChange}
-                      disabled={isPublicView}
-                      placeholder="Computer Science"
-                      className="w-full bg-black border-2 border-zinc-700 rounded-lg px-3 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed focus:border-purple-500/60 transition-colors font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-gray-500 font-mono mb-1 block">YEAR</label>
-                    <input
-                      name="year"
-                      value={form.year}
-                      onChange={handleChange}
-                      disabled={isPublicView}
-                      placeholder="2024"
-                      className="w-full bg-black border-2 border-zinc-700 rounded-lg px-3 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed focus:border-purple-500/60 transition-colors font-mono"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* LINKS & DOMAIN */}
-              <section className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <LinkIcon size={18} className="text-purple-500" />
-                  <h3 className="font-mono font-bold text-lg">Links & Domain</h3>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs text-gray-500 font-mono mb-1 block">LINKEDIN</label>
-                    <input
-                      name="linkedin"
-                      value={form.linkedin}
-                      onChange={handleChange}
-                      disabled={isPublicView}
-                      placeholder="https://linkedin.com/in/username"
-                      className="w-full bg-black border-2 border-zinc-700 rounded-lg px-3 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed focus:border-purple-500/60 transition-colors font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-gray-500 font-mono mb-1 block">GITHUB</label>
-                    <input
-                      name="github"
-                      value={form.github}
-                      onChange={handleChange}
-                      disabled={isPublicView}
-                      placeholder="https://github.com/username"
-                      className="w-full bg-black border-2 border-zinc-700 rounded-lg px-3 py-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed focus:border-purple-500/60 transition-colors font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-gray-500 font-mono mb-2 block">DOMAIN</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['web', 'app', 'game'].map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => !isPublicView && toggleDomain(d)}
-                          disabled={isPublicView}
-                          className={`px-4 py-2 rounded-lg border-2 text-sm font-mono uppercase transition ${
-                            form.domain.includes(d)
-                              ? "bg-purple-600 border-purple-500 text-white"
-                              : "bg-zinc-800 border-zinc-700 text-gray-400 hover:border-zinc-600"
-                          } ${isPublicView ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {!isPublicView && (
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-purple-600 hover:bg-purple-500 px-6 py-3 rounded-lg font-mono font-bold flex gap-2 items-center transition disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={18} />
-                      Save Changes
-                    </>
-                  )}
-                </button>
-              )}
-            </form>
-
-            {/* BADGES */}
-            <section className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Award size={18} className="text-purple-500" />
-                <h3 className="font-mono font-bold text-lg">Achievement Badges</h3>
-                <span className="ml-auto text-sm font-mono text-gray-500">
-                  {unlockedCount} / {BADGES.length}
-                </span>
-              </div>
-              
-              <div ref={badgesRef} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                {BADGES.map((badge) => {
-                  const earned = Number(user.points || 0) >= Number(badge.points);
-                  return (
-                    <div 
-                      key={badge.id} 
-                      className={`group relative aspect-square rounded-xl border-2 transition-all ${
-                        earned 
-                          ? "bg-zinc-800 border-purple-500/40 hover:border-purple-500/60 hover:scale-105" 
-                          : "bg-black/40 border-zinc-800 opacity-40"
-                      }`}
-                    >
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
-                        <img 
-                          src={badge.image} 
-                          alt={badge.name}
-                          className={`w-12 h-12 object-contain ${!earned && "grayscale"}`} 
-                        />
-                        <p className="text-[10px] font-mono text-center mt-1 leading-tight">{badge.name}</p>
+          {/* Dossier Column */}
+          <div className="lg:col-span-8 bg-black">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/5 h-full">
+                <div className="p-12 space-y-12">
+                   <div>
+                      <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-6">/ ABOUT_ME</span>
+                      <p className="text-zinc-400 text-sm leading-relaxed uppercase">
+                        {user.aboutMe || "NO RECENT ACTIVITY OR DOSSIER ENTRIES FOR THIS IDENTITY. THE ARCHITECT PREFERS ANONYMITY WITHIN THE COLLECTIVE ARCHIVES."}
+                      </p>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-8">
+                      <div>
+                         <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-2">YEAR</span>
+                         <p className="text-white font-black uppercase text-xs">{user.year || "UNKNOWN"}</p>
                       </div>
-                      
-                      {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        {earned ? "Unlocked!" : `${badge.points} pts required`}
+                      <div>
+                         <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-2">BRANCH</span>
+                         <p className="text-white font-black uppercase text-xs">{user.branch || "CORE"}</p>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+                   </div>
+                </div>
+
+                <div className="p-12 space-y-12 border-l border-white/5">
+                   <div>
+                      <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-8">/ BADGE_ARCHIVE</span>
+                      <div className="grid grid-cols-3 gap-6">
+                         {unlockedBadges.length > 0 ? (
+                            unlockedBadges.map((badge, i) => (
+                               <motion.div 
+                                 key={badge.id}
+                                 whileHover={{ scale: 1.1 }}
+                                 className="aspect-square bg-zinc-900 border border-white/5 rounded-lg flex flex-col items-center justify-center transition-all relative group p-2"
+                               >
+                                  <img src={badge.image} alt={badge.name} className="w-12 h-12 mb-2" />
+                                  <span className="text-[8px] font-black text-white uppercase tracking-tighter text-center">{badge.name}</span>
+                                </motion.div>
+                            ))
+                         ) : (
+                            <div className="col-span-3 py-12 text-center border border-dashed border-white/5">
+                               <p className="text-[8px] font-black text-zinc-800 uppercase tracking-widest">NO AWARDS DEPLOYED</p>
+                            </div>
+                         )}
+                      </div>
+                   </div>
+
+                   <div>
+                      <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-8">/ EXTERNAL_LINKS</span>
+                      <div className="flex gap-6">
+                         {user.linkedin && (
+                            <a href={user.linkedin} target="_blank" rel="noreferrer" className="p-4 bg-zinc-900 border border-white/5 hover:border-premium-accent transition-all">
+                               <FaLinkedin size={18} />
+                            </a>
+                         )}
+                         {user.github && (
+                            <a href={user.github} target="_blank" rel="noreferrer" className="p-4 bg-zinc-900 border border-white/5 hover:border-premium-accent transition-all">
+                               <FaGithub size={18} />
+                            </a>
+                         )}
+                      </div>
+                   </div>
+                </div>
+             </div>
           </div>
         </div>
-      </div>
 
-      {/* Email Verification Modal */}
-      {showVerificationModal && !isPublicView && (
-        <EmailVerification
-          user={user}
-          onVerificationSuccess={handleVerificationSuccess}
-          onClose={() => setShowVerificationModal(false)}
-        />
-      )}
+        {/* Global Position */}
+        <div className="mt-24 border-t border-white/5 pt-12 flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="flex items-center gap-12 opacity-30">
+               {["ARCHITECT", "ENGINEER", "DEPLOYER"].map(tag => (
+                  <span key={tag} className="text-[10px] font-black uppercase tracking-[0.6em]">{tag}</span>
+               ))}
+            </div>
+            <div className="relative w-48 opacity-20">
+               <ScribbleDoodle color="#ef5d47" />
+            </div>
+        </div>
+      </main>
+
     </div>
   );
 }

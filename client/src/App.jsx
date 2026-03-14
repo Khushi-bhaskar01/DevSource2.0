@@ -10,6 +10,7 @@ import Leaderboard from "./pages/Leaderboard";
 import ProjectWall from "./pages/ProjectWall";
 // User Pages
 import ProfilePage from "./pages/ProfilePage";
+import Settings from "./pages/Settings";
 import Tasks from "./pages/Tasks";
 import Members from "./pages/Members";
 
@@ -37,9 +38,7 @@ export default function App() {
         <Route
           path="/members"
           element={
-            <ProtectedRoute>
               <Members />
-            </ProtectedRoute>
           }
         />
         <Route
@@ -73,6 +72,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           }
         />

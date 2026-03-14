@@ -3,16 +3,15 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import { useAuth } from "../../AuthContext";
 import api from "../../api/axiosInstance";
+import { motion } from "framer-motion";
 import {
   Search,
   Award,
   Mail,
-  MapPin,
   GraduationCap,
-  Shield,
-  User,
-  TrendingUp,
-  Linkedin,
+  ShieldAlert,
+  SearchIcon,
+  Filter
 } from "lucide-react";
 
 export default function AdminUsers() {
@@ -23,281 +22,196 @@ export default function AdminUsers() {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
-  const [filterDomain, setFilterDomain] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
-
-    if (!authUser?._id || authUser.role !== "admin") {
+    if (!authUser?._id || (authUser.role !== "admin" && authUser.role !== "superadmin")) {
       navigate("/");
       return;
     }
-
     fetchUsers();
   }, [authUser, authLoading, navigate]);
 
   useEffect(() => {
     let filtered = users;
-
     if (searchTerm) {
-      filtered = filtered.filter(
-        (u) =>
-          u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(u => 
+        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     if (filterRole !== "all") {
-      filtered = filtered.filter((u) => u.role === filterRole);
+      filtered = filtered.filter(u => u.role === filterRole);
     }
-
-    if (filterDomain !== "all") {
-      filtered = filtered.filter((u) => u.domain?.includes(filterDomain));
-    }
-
     setFilteredUsers(filtered);
-  }, [searchTerm, filterRole, filterDomain, users]);
+  }, [searchTerm, filterRole, users]);
 
   const fetchUsers = async () => {
     try {
       setError("");
       const res = await api.get("/api/user/data");
-      
-      // The API returns grouped members: { user, members: { webDev, gameDev, appDev } }
       let allUsers = [];
-      
       if (res.data?.members) {
-        const { webDev = [], gameDev = [], appDev = [] } = res.data.members;
-        
-        // Combine all users from different domains
-        // Use a Map to handle users in multiple domains
+        const { webDev = [], gameDev = [], appDev = [], other = [] } = res.data.members;
         const userMap = new Map();
-        
-        [...webDev, ...gameDev, ...appDev].forEach(user => {
-          if (user._id) {
-            const userId = user._id.toString();
-            if (!userMap.has(userId)) {
-              userMap.set(userId, user);
-            }
-          }
-        });
-        
+        [...webDev, ...gameDev, ...appDev, ...other].forEach(u => u._id && userMap.set(u._id.toString(), u));
         allUsers = Array.from(userMap.values());
       }
-      
-      // Sort by points descending
-      const sorted = allUsers.sort((a, b) => (b.points || 0) - (a.points || 0));
-      
-      setUsers(sorted);
-      setFilteredUsers(sorted);
+      setUsers(allUsers.sort((a, b) => (b.points || 0) - (a.points || 0)));
     } catch (err) {
-      console.error("Failed to fetch users:", err);
-      setError("Failed to load users");
+      setError("MEMBER_FETCH_FAILED");
     } finally {
       setLoading(false);
     }
   };
 
-  const getRoleBadge = (role) => {
-    switch (role) {
-      case "admin":
-        return (
-          <span className="px-3 py-1 bg-purple-500/20 border border-purple-500/50 rounded-full text-xs font-[Zen_Dots] text-purple-400 flex items-center gap-1">
-            <Shield size={12} /> Admin
-          </span>
-        );
-      case "student":
-        return (
-          <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/50 rounded-full text-xs font-[Zen_Dots] text-blue-400 flex items-center gap-1">
-            <User size={12} /> Student
-          </span>
-        );
-      default:
-        return (
-          <span className="px-3 py-1 bg-gray-500/20 border border-gray-500/50 rounded-full text-xs font-[Zen_Dots] text-gray-400">
-            {role}
-          </span>
-        );
+   const handleRoleChange = async (targetUser, newRole) => {
+    if (!window.confirm(`CONFIRM_${newRole.toUpperCase()}_ELEVATION?`)) return;
+    try {
+      const endpoint = newRole === "admin" ? "/api/superadmin/add-admin" : "/api/superadmin/remove-admin";
+      await api.post(endpoint, { email: targetUser.email });
+      fetchUsers();
+    } catch (err) {
+      setError(err.response?.data?.message || "AUTHORIZATION_FAILURE");
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-black text-white pt-24">
-        <Navbar />
-        <p className="text-center animate-pulse font-[Zen_Dots] mt-10">
-          Loading users...
-        </p>
-      </div>
-    );
-  }
+  if (authLoading || loading) return (
+    <div className="min-h-screen bg-[#08080a] text-white flex items-center justify-center font-black uppercase tracking-[0.5em] text-[10px]">
+       QUERYING_IDENTITIES...
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-6">
+    <div className="min-h-screen bg-[#08080a] text-white selection:bg-premium-accent/30 font-inter">
       <Navbar />
-
-      <div className="max-w-7xl mx-auto mt-10 space-y-6">
-        {/* HEADER */}
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-[Zen_Dots]">Manage Users</h1>
-            <p className="text-white/60 mt-1 text-sm">
-              Total: {filteredUsers.length} users
-            </p>
+      
+      <main className="max-w-7xl mx-auto px-6 pt-40 pb-20">
+        <header className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-12 border-b border-white/5 pb-12">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-3 mb-6">
+               <ShieldAlert className="text-premium-accent" size={16} />
+               <span className="text-zinc-500 font-black uppercase tracking-[0.4em] text-[10px]">/ IDENTITY_MANAGER</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">
+              ACCESS <span className="text-zinc-800">ARCHIVE</span>.
+            </h1>
           </div>
-        </div>
+        </header>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500 px-4 py-3 rounded-lg">
-            <p className="text-red-300 text-sm">{error}</p>
-          </div>
+            <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 text-[10px] font-black uppercase tracking-widest text-red-500 text-center">
+               PROTOCOL_FAILURE:: {error}
+            </div>
         )}
 
-        {/* FILTERS */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-sm"
-            />
-          </div>
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm"
-          >
-            <option value="all">All Roles</option>
-            <option value="student">Students</option>
-            <option value="admin">Admins</option>
-          </select>
-          <select
-            value={filterDomain}
-            onChange={(e) => setFilterDomain(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm"
-          >
-            <option value="all">All Domains</option>
-            <option value="web">Web</option>
-            <option value="app">App</option>
-            <option value="game">Game</option>
-          </select>
+        <div className="flex flex-col md:flex-row gap-8 mb-12">
+           <div className="flex-1 relative group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-premium-accent transition-colors" size={16} />
+              <input 
+                type="text" 
+                placeholder="PROBE_IDENTITY..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white/2 border border-white/5 py-5 pl-16 pr-8 text-[11px] font-black uppercase tracking-widest outline-none focus:border-white/20 transition-all text-white"
+              />
+           </div>
+           <div className="flex items-center gap-4 bg-white/2 border border-white/5 px-8">
+              <Filter className="text-zinc-700" size={14} />
+              <select 
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="bg-transparent py-5 text-[10px] font-black uppercase tracking-widest outline-none"
+              >
+                 <option value="all">ALL_PERMISSIONS</option>
+                 <option value="student">STUDENT_UNITS</option>
+                 <option value="admin">ADMINS</option>
+              </select>
+           </div>
         </div>
 
-        {/* USERS GRID */}
-        {filteredUsers.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
-            <p className="text-white/60 font-[Zen_Dots]">No users found</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredUsers.map((user, index) => (
-              <div
-                key={user._id}
-                className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition"
-              >
-                <div className="flex items-start gap-4">
-                  {/* AVATAR */}
-                  <div className="w-16 h-16 rounded-full bg-linear-to-br from-pink-500 via-purple-500 to-yellow-400 flex items-center justify-center text-2xl font-bold shrink-0">
-                    {user.name?.[0]?.toUpperCase() || "?"}
-                  </div>
-
-                  {/* INFO */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0">
-                        <h3 className="font-[Zen_Dots] text-lg truncate">
-                          {user.name}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getRoleBadge(user.role)}
-                          {index < 3 && (
-                            <span className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/50 rounded-full text-xs font-[Zen_Dots] text-yellow-400">
-                              Top {index + 1}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 text-green-400 font-bold text-lg whitespace-nowrap">
-                        <Award size={20} />
-                        {user.points || 0}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-white/70">
-                      {user.email && (
-                        <div className="flex items-center gap-2 truncate">
-                          <Mail size={14} className="shrink-0" />
-                          <span className="truncate">{user.email}</span>
-                        </div>
-                      )}
-
-                      {user.branch && (
-                        <div className="flex items-center gap-2">
-                          <GraduationCap size={14} className="shrink-0" />
-                          <span>
-                            {user.branch}
-                            {user.year && ` (${user.year})`}
-                          </span>
-                        </div>
-                      )}
-
-                      {user.location && (
-                        <div className="flex items-center gap-2">
-                          <MapPin size={14} className="shrink-0" />
-                          <span>{user.location}</span>
-                        </div>
-                      )}
-
-                      {user.linkedin && (
-                        <div className="flex items-center gap-2">
-                          <Linkedin size={14} className="shrink-0" />
-                          <a
-                            href={user.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 truncate"
-                          >
-                            LinkedIn Profile
-                          </a>
-                        </div>
-                      )}
-
-                      {user.domain && user.domain.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {user.domain.map((d) => (
-                            <span
-                              key={d}
-                              className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-xs uppercase"
-                            >
-                              {d}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => navigate(`/profile/${user._id}`)}
-                      className="mt-4 text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                    >
-                      View Profile
-                      <TrendingUp size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        <div className="border border-white/5 bg-white/2 backdrop-blur-sm">
+           <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                 <thead>
+                    <tr className="border-b border-white/5 uppercase text-[9px] font-black tracking-[0.3em] text-zinc-600">
+                       <th className="p-8">IDENTITY</th>
+                       <th className="p-8">DOMAIN_ACCESS</th>
+                       <th className="p-8">XP_METRICS</th>
+                       <th className="p-8 text-right">PROTOCOL</th>
+                    </tr>
+                 </thead>
+                 <tbody>
+                    {filteredUsers.map((user, idx) => (
+                       <tr key={user._id} className="border-b border-white/5 group hover:bg-white/5 transition-all">
+                          <td className="p-8">
+                             <div className="flex items-center gap-6">
+                                <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-black text-xs text-white group-hover:border-premium-accent group-hover:text-premium-accent transition-all">
+                                   {user.name?.[0].toUpperCase()}
+                                </div>
+                                <div>
+                                   <div className="flex items-center gap-2 mb-1">
+                                      <p className="text-sm font-black uppercase tracking-tight text-white group-hover:text-premium-accent transition-colors">{user.name}</p>
+                                      {user.role === 'admin' && <span className="text-[7px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1">ADMIN</span>}
+                                      {user.role === 'superadmin' && <span className="text-[7px] font-black bg-premium-accent/10 text-premium-accent border border-premium-accent/20 px-1">ROOT</span>}
+                                   </div>
+                                   <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">{user.email}</p>
+                                </div>
+                             </div>
+                          </td>
+                          <td className="p-8">
+                             <div className="flex flex-wrap gap-2">
+                                {user.domain?.map(d => (
+                                   <span key={d} className="px-3 py-1 bg-white/5 border border-white/5 text-[8px] font-black uppercase tracking-widest text-zinc-400">
+                                      {d}
+                                   </span>
+                                ))}
+                                {(!user.domain || user.domain.length === 0) && <span className="text-[9px] font-black text-zinc-800 tracking-widest">UNASSIGNED</span>}
+                             </div>
+                          </td>
+                          <td className="p-8">
+                             <div className="flex items-center gap-2 text-white font-black text-lg">
+                                <Award size={14} className="text-premium-accent" />
+                                {user.points || 0}
+                             </div>
+                          </td>
+                          <td className="p-8 text-right">
+                             <div className="flex flex-col items-end gap-2">
+                                <button onClick={() => navigate(`/profile/${user._id}`)} className="text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-white flex items-center gap-2 group/btn">
+                                   VIEW_DOSSIER
+                                   <ChevronRight className="group-hover/btn:translate-x-1 transition-transform" size={12} />
+                                </button>
+                                
+                                {authUser?.role === "superadmin" && user.role !== "superadmin" && (
+                                   <>
+                                      {user.role === "admin" ? (
+                                         <button 
+                                           onClick={() => handleRoleChange(user, "student")}
+                                           className="text-[8px] font-black uppercase tracking-widest text-red-500/50 hover:text-red-500 transition-colors"
+                                         >
+                                            REVOKE_ADMIN_ACCESS
+                                         </button>
+                                      ) : (
+                                         <button 
+                                           onClick={() => handleRoleChange(user, "admin")}
+                                           className="text-[8px] font-black uppercase tracking-widest text-blue-500/50 hover:text-blue-500 transition-colors"
+                                         >
+                                            ELEVATE_TO_ADMIN
+                                         </button>
+                                      )}
+                                   </>
+                                )}
+                             </div>
+                          </td>
+                       </tr>
+                    ))}
+                 </tbody>
+              </table>
+           </div>
+        </div>
+      </main>
     </div>
   );
 }

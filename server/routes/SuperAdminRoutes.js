@@ -1,6 +1,5 @@
 import express from "express";
-import userAuth from "../middleware/userAuth.js";
-import { verifySuperAdmin } from "../middleware/VerifysuperAdmin.js";
+import { isAuthenticated as userAuth, isSuperAdmin as verifySuperAdmin } from "../middleware/authMiddleware.js";
 import { addAdmin, removeAdmin } from "../controllers/superAdminController.js";
 
 const router = express.Router();

@@ -4,18 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-
-    isAccountVerified: {
-      type: Boolean,
-      default: false,
-    },
-
-    verifyOtp: { type: String, default: "" },
-    verifyOtpExpireAt: { type: Number, default: 0 },
-
-    resetOtp: { type: String, default: "" },
-    resetOtpExpireAt: { type: Number, default: 0 },
+    firebaseUID: { type: String, required: true, unique: true },
 
     badges: [
       {
@@ -43,8 +32,8 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["student", "admin", "superadmin"],
-      default: "student",
+      enum: ["student", "admin", "superadmin", "user"],
+      default: "user",
     },
   },
   { timestamps: true }

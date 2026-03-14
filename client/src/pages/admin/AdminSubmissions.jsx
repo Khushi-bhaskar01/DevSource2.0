@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import { useAuth } from "../../AuthContext";
 import api from "../../api/axiosInstance";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
   XCircle,
@@ -10,7 +11,9 @@ import {
   ExternalLink,
   Filter,
   User,
-  ClipboardList,
+  ShieldAlert,
+  X,
+  ChevronRight
 } from "lucide-react";
 
 export default function AdminSubmissions() {
@@ -28,316 +31,158 @@ export default function AdminSubmissions() {
 
   useEffect(() => {
     if (authLoading) return;
-
-    if (!authUser?._id || authUser.role !== "admin") {
+    if (!authUser?._id || (authUser.role !== "admin" && authUser.role !== "superadmin")) {
       navigate("/");
       return;
     }
-
     fetchSubmissions();
   }, [authUser, authLoading, navigate]);
 
   useEffect(() => {
     let filtered = submissions;
-
     if (filterStatus !== "all") {
-      // Match backend status (Pending, Approved, Rejected with capital first letter)
-      const statusMap = {
-        pending: "Pending",
-        approved: "Approved", 
-        rejected: "Rejected"
-      };
+      const statusMap = { pending: "Pending", approved: "Approved", rejected: "Rejected" };
       filtered = filtered.filter((s) => s.status === statusMap[filterStatus]);
     }
-
     setFilteredSubmissions(filtered);
   }, [filterStatus, submissions]);
 
   const fetchSubmissions = async () => {
     try {
-      setError("");
+      setLoading(true);
       const res = await api.get("/api/submissions");
-      const submissionsData = Array.isArray(res.data)
-        ? res.data
-        : res.data?.submissions || [];
-
-      // Sort by status priority: Pending first, then by date
-      const sorted = submissionsData.sort((a, b) => {
-        if (a.status === "Pending" && b.status !== "Pending") return -1;
-        if (a.status !== "Pending" && b.status === "Pending") return 1;
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      });
-
-      setSubmissions(sorted);
-      setFilteredSubmissions(sorted);
+      const data = Array.isArray(res.data) ? res.data : res.data?.submissions || [];
+      setSubmissions(data.sort((a, b) => (a.status === "Pending" ? -1 : 1)));
     } catch (err) {
-      console.error("Failed to fetch submissions:", err);
-      setError(err.response?.data?.message || "Failed to load submissions");
+      setError("LOAD_FAILED");
     } finally {
-      setLoading(false);
+       setLoading(false);
     }
   };
 
   const handleReview = async (submissionId, newStatus) => {
     setProcessingId(submissionId);
-    setError("");
-
     try {
-      // Send status with capital first letter to match backend enum
       const payload = { 
-        status: newStatus.charAt(0).toUpperCase() + newStatus.slice(1) 
+        status: newStatus.charAt(0).toUpperCase() + newStatus.slice(1),
+        feedback: feedbackText.trim()
       };
-      
-      // Add feedback if provided
-      if (feedbackText.trim()) {
-        payload.feedback = feedbackText.trim();
-      }
-      
       await api.put(`/api/submissions/${submissionId}`, payload);
-      
-      // Reset feedback and close modal
-      setFeedbackText("");
       setFeedbackModal({ open: false, submissionId: null, action: null });
-      
-      // Refresh submissions list
-      await fetchSubmissions();
+      fetchSubmissions();
     } catch (err) {
-      console.error("Failed to update submission:", err);
-      setError(err.response?.data?.message || "Failed to update submission");
+      setError("UPDATE_FAILED");
     } finally {
       setProcessingId(null);
     }
   };
 
-  const openFeedbackModal = (submissionId, action) => {
-    setFeedbackModal({ open: true, submissionId, action });
-    setFeedbackText("");
-  };
-
-  const closeFeedbackModal = () => {
-    setFeedbackModal({ open: false, submissionId: null, action: null });
-    setFeedbackText("");
-  };
-
-  const getStatusBadge = (status) => {
-    // Normalize status to lowercase for comparison
-    const normalizedStatus = status?.toLowerCase();
-    
-    switch (normalizedStatus) {
-      case "pending":
-        return (
-          <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/50 rounded-full text-xs font-[Zen_Dots] text-yellow-400 flex items-center gap-1 w-fit">
-            <Clock size={12} /> Pending
-          </span>
-        );
-      case "approved":
-        return (
-          <span className="px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full text-xs font-[Zen_Dots] text-green-400 flex items-center gap-1 w-fit">
-            <CheckCircle size={12} /> Approved
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full text-xs font-[Zen_Dots] text-red-400 flex items-center gap-1 w-fit">
-            <XCircle size={12} /> Rejected
-          </span>
-        );
-      default:
-        return (
-          <span className="px-3 py-1 bg-gray-500/20 border border-gray-500/50 rounded-full text-xs font-[Zen_Dots] text-gray-400 w-fit">
-            {status}
-          </span>
-        );
-    }
-  };
-
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-black text-white pt-24">
-        <Navbar />
-        <p className="text-center animate-pulse font-[Zen_Dots] mt-10">
-          Loading submissions...
-        </p>
-      </div>
-    );
-  }
+  if (authLoading || loading) return (
+    <div className="min-h-screen bg-[#08080a] text-white flex items-center justify-center font-black uppercase tracking-[0.5em] text-[10px]">
+       DECODING_TRANSMISSIONS...
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-6">
+    <div className="min-h-screen bg-[#08080a] text-white selection:bg-premium-accent/30 font-inter">
       <Navbar />
-
-      <div className="max-w-7xl mx-auto mt-10 space-y-6">
-        {/* HEADER */}
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-[Zen_Dots]">Review Submissions</h1>
-            <p className="text-white/60 mt-1 text-sm">
-              Total: {filteredSubmissions.length} submissions
-            </p>
+      
+      <main className="max-w-7xl mx-auto px-6 pt-40 pb-20">
+        <header className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-12 border-b border-white/5 pb-12">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-3 mb-6">
+               <ShieldAlert className="text-premium-accent" size={16} />
+               <span className="text-zinc-500 font-black uppercase tracking-[0.4em] text-[10px]">/ INBOUND_REPORTS</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">
+              REVIEW <span className="text-zinc-800">LOGS</span>.
+            </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Filter size={20} className="text-white/60" />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
+          
+          <div className="flex items-center gap-4 bg-white/2 border border-white/5 px-6 py-4">
+             <Filter size={14} className="text-zinc-700" />
+             <select 
+               value={filterStatus}
+               onChange={(e) => setFilterStatus(e.target.value)}
+               className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none"
+             >
+                <option value="all">ALL_REPORTS</option>
+                <option value="pending">PENDING</option>
+                <option value="approved">APPROVED</option>
+                <option value="rejected">REJECTED</option>
+             </select>
           </div>
-        </div>
+        </header>
 
-        {error && (
-          <div className="bg-red-500/20 border border-red-500 px-4 py-3 rounded-lg">
-            <p className="text-red-300 text-sm">{error}</p>
-          </div>
-        )}
-
-        {/* SUBMISSIONS LIST */}
         <div className="space-y-4">
-          {filteredSubmissions.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
-              <p className="text-white/60 font-[Zen_Dots]">
-                No submissions found
-              </p>
-            </div>
-          ) : (
-            filteredSubmissions.map((submission) => (
-              <div
-                key={submission._id}
-                className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition"
-              >
-                <div className="flex flex-col lg:flex-row gap-6">
-                  {/* LEFT: INFO */}
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-[Zen_Dots] text-lg">
-                          {submission.taskId?.title || "Task Deleted"}
-                        </h3>
-                        <p className="text-sm text-white/60 mt-1">
-                          {submission.taskId?.description || "No description"}
-                        </p>
+           {filteredSubmissions.map((s) => (
+             <div key={s._id} className="bg-white/2 border border-white/5 group hover:bg-white/5 transition-all p-8 flex flex-col lg:flex-row items-center justify-between gap-12">
+                <div className="flex-1 space-y-6">
+                   <div className="flex flex-wrap items-center gap-6">
+                      <div className={`px-4 py-1.5 text-[8px] font-black uppercase tracking-widest border ${
+                        s.status === 'Pending' ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/5' :
+                        s.status === 'Approved' ? 'text-green-500 border-green-500/20 bg-green-500/5' :
+                        'text-red-500 border-red-500/20 bg-red-500/5'
+                      }`}>
+                         {s.status}
                       </div>
-                      {getStatusBadge(submission.status)}
-                    </div>
-
-                    <div className="flex flex-wrap gap-4 text-sm text-white/70">
+                      <h3 className="text-xl font-black uppercase tracking-tight text-white">{s.taskId?.title || "DELETED_TASK"}</h3>
+                   </div>
+                   
+                   <div className="flex flex-wrap gap-8 text-[10px] font-black uppercase tracking-widest text-zinc-600">
                       <div className="flex items-center gap-2">
-                        <User size={16} className="shrink-0" />
-                        <span>
-                          {submission.userId?.name || "Unknown User"}
-                        </span>
+                         <User size={12} className="text-premium-accent" />
+                         <span>{s.userId?.name || "ANONYMOUS"}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <ClipboardList size={16} className="shrink-0" />
-                        <span className="uppercase">
-                          {submission.taskId?.domain || "N/A"}
-                        </span>
+                         <Clock size={12} />
+                         <span>{new Date(s.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-green-400 font-bold">
-                        {submission.taskId?.points || 0} pts
-                      </div>
-                      <div className="text-white/50 text-xs">
-                        Submitted:{" "}
-                        {new Date(submission.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-
-                    <div>
-                      <a
-                        href={submission.submissionLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm break-all"
-                      >
-                        <ExternalLink size={16} className="shrink-0" />
-                        View Submission Link
+                      <a href={s.submissionLink} target="_blank" className="flex items-center gap-2 text-white hover:text-premium-accent transition-colors">
+                         <ExternalLink size={12} />
+                         OPEN_ASSET
                       </a>
-                    </div>
-
-                    {submission.feedback && (
-                      <div className="bg-white/5 border border-white/10 rounded-lg p-3 mt-2">
-                        <p className="text-xs text-white/60 mb-1">Feedback:</p>
-                        <p className="text-sm">{submission.feedback}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* RIGHT: ACTIONS */}
-                  {submission.status?.toLowerCase() === "pending" && (
-                    <div className="flex lg:flex-col gap-3">
-                      <button
-                        onClick={() => openFeedbackModal(submission._id, "approved")}
-                        disabled={processingId === submission._id}
-                        className="flex-1 lg:flex-none bg-green-500 hover:bg-green-600 px-6 py-3 rounded-lg font-[Zen_Dots] flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <CheckCircle size={18} />
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => openFeedbackModal(submission._id, "rejected")}
-                        disabled={processingId === submission._id}
-                        className="flex-1 lg:flex-none bg-red-500 hover:bg-red-600 px-6 py-3 rounded-lg font-[Zen_Dots] flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <XCircle size={18} />
-                        Reject
-                      </button>
-                    </div>
-                  )}
+                   </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
 
-      {/* FEEDBACK MODAL */}
-      {feedbackModal.open && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-zinc-900 border border-white/20 rounded-xl max-w-lg w-full p-6 space-y-4">
-            <h2 className="text-xl font-[Zen_Dots]">
-              {feedbackModal.action === "approved" ? "Approve" : "Reject"} Submission
-            </h2>
-            
-            <div>
-              <label className="block text-sm text-white/70 mb-2">
-                Feedback (Optional)
-              </label>
-              <textarea
-                value={feedbackText}
-                onChange={(e) => setFeedbackText(e.target.value)}
-                placeholder="Provide feedback to the user..."
-                rows={4}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={closeFeedbackModal}
-                className="flex-1 bg-white/5 hover:bg-white/10 px-6 py-3 rounded-lg font-[Zen_Dots] transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleReview(feedbackModal.submissionId, feedbackModal.action)}
-                disabled={processingId === feedbackModal.submissionId}
-                className={`flex-1 px-6 py-3 rounded-lg font-[Zen_Dots] transition disabled:opacity-50 disabled:cursor-not-allowed ${
-                  feedbackModal.action === "approved"
-                    ? "bg-green-500 hover:bg-green-600"
-                    : "bg-red-500 hover:bg-red-600"
-                }`}
-              >
-                {processingId === feedbackModal.submissionId ? "Processing..." : "Confirm"}
-              </button>
-            </div>
-          </div>
+                {s.status === 'Pending' && (
+                  <div className="flex gap-4">
+                     <button onClick={() => setFeedbackModal({ open: true, submissionId: s._id, action: "approved" })} className="px-10 py-5 bg-white text-black font-black uppercase tracking-widest text-[9px] hover:bg-green-500 hover:text-white transition-all">APPROVE</button>
+                     <button onClick={() => setFeedbackModal({ open: true, submissionId: s._id, action: "rejected" })} className="px-10 py-5 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[9px] hover:bg-red-500 transition-all">REJECT</button>
+                  </div>
+                )}
+             </div>
+           ))}
         </div>
-      )}
+      </main>
+
+      <AnimatePresence>
+         {feedbackModal.open && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-3xl bg-black/60">
+               <motion.div initial={{ scale: 0.98, y: 10 }} animate={{ scale: 1, y: 0 }} className="bg-[#0c0c0e] border border-white/10 w-full max-w-lg p-12 relative">
+                  <button onClick={() => setFeedbackModal({ open: false, submissionId: null, action: null })} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors">
+                     <X size={20} />
+                  </button>
+                  <h2 className="text-2xl font-black uppercase tracking-tighter mb-8">REPORT_FEEDBACK</h2>
+                  <textarea 
+                    rows={4}
+                    placeholder="PROVIDE ARCHIVE NOTES..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    className="w-full bg-black border border-white/10 p-5 text-xs font-inter uppercase leading-relaxed outline-none resize-none mb-8" 
+                  />
+                  <button 
+                    onClick={() => handleReview(feedbackModal.submissionId, feedbackModal.action)}
+                    className={`w-full py-6 font-black uppercase tracking-[0.3em] text-[10px] transition-all ${
+                      feedbackModal.action === 'approved' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                    }`}
+                  >
+                     {processingId ? "UPLOADING..." : "CONFIRM_ACTION"}
+                  </button>
+               </motion.div>
+            </motion.div>
+         )}
+      </AnimatePresence>
     </div>
   );
 }

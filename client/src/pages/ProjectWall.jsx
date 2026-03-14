@@ -1,241 +1,385 @@
-import React, { useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Navbar from '../components/Navbar';
+import React, { useRef, useEffect } from "react";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const HARDCODED_PROJECTS = [
+  {
+    _id: "p1",
+    title: "EcoTask Manager",
+    members: ["Khushi Bhaskar", "Utkarsh Yadav", "Anurag Singh", "Krrish Khowal", "Aadi Jain", "Priya Sharma"],
+    teamName: "DevSource",
+    deployedLink: "https://example.com/ecotask",
+    domain: "Web Development",
+    description: "Sustainable task management reducing digital clutter and optimizing energy usage in remote teams.",
+    points: 800,
+    tags: ["React", "Node.js"],
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=900&q=80",
+  },
+  {
+    _id: "p2",
+    title: "NeuroTrack App",
+    members: ["Utkarsh Yadav", "Meera Joshi", "Rahul Gupta", "Sneha Patel", "Dev Malhotra", "Aryan Singh", "Tanya Verma"],
+    teamName: "V0ID_SCAN",
+    deployedLink: "https://example.com/neuro",
+    domain: "App Development",
+    description: "Cognitive health monitoring through AI-driven pattern recognition and real-time user feedback.",
+    points: 1200,
+    tags: ["Flutter", "TensorFlow"],
+    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=900&q=80",
+  },
+  {
+    _id: "p3",
+    title: "Vertex Engine",
+    members: ["Aadi Jain", "Rohan Mehta", "Isha Kapoor", "Vikram Das", "Nisha Rao", "Kabir Sen"],
+    teamName: "RENDER_CORE",
+    deployedLink: "https://example.com/vertex",
+    domain: "Game Development",
+    description: "High-performance physics engine for collaborative 3D environments and real-time interaction.",
+    points: 1500,
+    tags: ["C++", "Vulkan"],
+    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=900&q=80",
+  },
+  {
+    _id: "p4",
+    title: "Cryptyo Protocol",
+    members: ["Krrish Khowal", "Ananya Roy", "Siddharth Nair", "Pooja Iyer", "Arjun Bhat", "Lakshmi Pillai", "Ronak Shah"],
+    teamName: "HASH_SYNDICATE",
+    deployedLink: "https://example.com/crypto",
+    domain: "Web3 / Blockchain",
+    description: "Secure decentralized identity protocol for managing credentials across multiple networks.",
+    points: 950,
+    tags: ["Solidity", "Web3.js"],
+    image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=900&q=80",
+  },
+  {
+    _id: "p5",
+    title: "Flux Capacitor UI",
+    members: ["Anurag Singh", "Divya Menon", "Harsh Agarwal", "Riya Desai", "Nikhil Kumar", "Shreya Tiwari"],
+    teamName: "UI_ARCHITECTS",
+    deployedLink: "https://example.com/flux",
+    domain: "UI/UX Architecture",
+    description: "Design system for high-scale enterprise applications focused on rapid prototyping and accessibility.",
+    points: 600,
+    tags: ["Figma", "React"],
+    image: "https://images.unsplash.com/photo-1545670723-196ed0954986?w=900&q=80",
+  },
+  {
+    _id: "p6",
+    title: "BioSync Dashboard",
+    members: ["Khushi Bhaskar", "Tanvi Choudhary", "Manav Sethi", "Preethi Nambiar", "Zubin Irani", "Aditi Ghosh", "Sameer Khan"],
+    teamName: "BIO_HACKERS",
+    deployedLink: "https://example.com/biosync",
+    domain: "Health Tech",
+    description: "Real-time biometric data analysis for professional athletes during high-intensity training sessions.",
+    points: 1100,
+    tags: ["D3.js", "Express"],
+    image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=900&q=80",
+  },
+];
+
+const N = HARDCODED_PROJECTS.length;
+
 export default function ProjectWall() {
-  const sectionRef = useRef(null);
-  const cardsRef = useRef([]);
-  const headingRef = useRef(null);
+  const outerRef = useRef(null);   // pinned wrapper
+  const trackRef = useRef(null);   // horizontal strip
+  const heroRef  = useRef(null);   // heading section
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Heading animation
-      gsap.from(headingRef.current, {
-        opacity: 0,
-        y: 50,
-        duration: 1,
-        ease: 'power3.out'
+      const track = trackRef.current;
+      const outer = outerRef.current;
+
+      // Travel distance = full track width minus one viewport
+      const travelDist = () => track.scrollWidth - window.innerWidth;
+
+      // ── Hero entrance ──────────────────────────────────────────────────────
+      gsap.from(".pw-hero-label", {
+        opacity: 0, x: -20, duration: 0.8, ease: "power3.out", delay: 0.2,
+      });
+      gsap.from(".pw-hero-title", {
+        opacity: 0, y: 60, duration: 1, ease: "power3.out", delay: 0.35,
+      });
+      gsap.from(".pw-hero-hint", {
+        opacity: 0, y: 20, duration: 0.8, ease: "power3.out", delay: 0.65,
       });
 
-      // Cards animation
-      gsap.from(cardsRef.current, {
+      // ── GSAP horizontal scroll (the main effect) ───────────────────────────
+      // Pin `outer`, tween `track` x from 0 → -travelDist()
+      // scrub: 1.2 → silky smooth 1.2s lag behind scroll
+      const hst = gsap.to(track, {
+        x: () => -travelDist(),
+        ease: "none",
         scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 70%',
-          toggleActions: 'play none none reverse'
+          trigger: outer,
+          start: "top top",
+          end: () => `+=${travelDist()}`,
+          scrub: 1.2,
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
         },
-        y: 60,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.15,
-        ease: 'power2.out'
       });
-    }, sectionRef);
+
+      // ── Image parallax ─────────────────────────────────────────────────────
+      const imgs = track.querySelectorAll(".pw-img-bg");
+      ScrollTrigger.create({
+        trigger: outer,
+        start: "top top",
+        end: () => `+=${travelDist()}`,
+        scrub: true,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          const travel = self.progress * travelDist();
+          imgs.forEach((img, i) => {
+            gsap.set(img, { x: (travel - i * window.innerWidth) * 0.12 });
+          });
+        },
+      });
+
+      // ── Per-card content reveal ────────────────────────────────────────────
+      track.querySelectorAll(".pw-card-body").forEach((body, i) => {
+        if (i === 0) return;
+        gsap.from(body, {
+          opacity: 0,
+          x: 50,
+          duration: 0.5,
+          ease: "power2.out",
+          scrollTrigger: {
+            containerAnimation: hst,
+            trigger: body.closest(".pw-card"),
+            start: "left 85%",
+            toggleActions: "play none none none",
+          },
+        });
+      });
+
+      ScrollTrigger.refresh();
+
+      const onResize = () => ScrollTrigger.refresh();
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    });
 
     return () => ctx.revert();
   }, []);
 
-  // PROJECT DATA - Edit this array to add/modify projects
-  const projects = [
-    {
-      id: 1,
-      title: "E-Commerce Platform",
-      description: "A full-stack e-commerce platform with payment integration, cart functionality, and admin dashboard.",
-      image: "https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=600&fit=crop",
-      tags: ["React", "Node.js", "MongoDB", "Stripe"],
-      githubUrl: "https://github.com/devsource/ecommerce",
-      liveUrl: "https://ecommerce-demo.vercel.app",
-      author: "Khushi Bhaskar",
-      date: "Jan 2025"
-    },
-    {
-      id: 2,
-      title: "Task Management App",
-      description: "Real-time collaborative task management tool with drag-and-drop functionality and team features.",
-      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop",
-      tags: ["React", "Firebase", "Tailwind"],
-      githubUrl: "https://github.com/devsource/taskmanager",
-      liveUrl: "https://taskmanager-demo.vercel.app",
-      author: "Krrish Khowal",
-      date: "Dec 2024"
-    },
-    {
-      id: 3,
-      title: "Weather Dashboard",
-      description: "Beautiful weather app with real-time data, forecasts, and interactive maps showing global weather patterns.",
-      image: "https://images.unsplash.com/photo-1592210454359-9043f067919b?w=800&h=600&fit=crop",
-      tags: ["React", "OpenWeather API", "Chart.js"],
-      githubUrl: "https://github.com/devsource/weather",
-      liveUrl: "https://weather-demo.vercel.app",
-      author: "Utkarsh Yadav",
-      date: "Nov 2024"
-    },
-    {
-      id: 4,
-      title: "Fitness Tracker",
-      description: "Mobile-first fitness tracking application with workout plans, calorie counter, and progress analytics.",
-      image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&h=600&fit=crop",
-      tags: ["React Native", "Redux", "Firebase"],
-      githubUrl: "https://github.com/devsource/fitness",
-      liveUrl: "https://fitness-demo.vercel.app",
-      author: "Anurag kr Singh",
-      date: "Oct 2024"
-    },
-    {
-      id: 5,
-      title: "Portfolio Builder",
-      description: "Easy-to-use portfolio builder with customizable templates, drag-and-drop editor, and one-click deployment.",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop",
-      tags: ["Next.js", "Tailwind", "Vercel"],
-      githubUrl: "https://github.com/devsource/portfolio-builder",
-      liveUrl: "https://portfolio-builder-demo.vercel.app",
-      author: "Aadi Jain",
-      date: "Sep 2024"
-    },
-    {
-      id: 6,
-      title: "Chat Application",
-      description: "Real-time chat app with end-to-end encryption, group chats, file sharing, and video calling features.",
-      image: "https://images.unsplash.com/photo-1611746872915-64382b5c76da?w=800&h=600&fit=crop",
-      tags: ["Socket.io", "WebRTC", "Express", "MongoDB"],
-      githubUrl: "https://github.com/devsource/chat-app",
-      liveUrl: "https://chat-demo.vercel.app",
-      author: "DevSource Team",
-      date: "Aug 2024"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-black text-white">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        body { background: #000 !important; }
+        .pw-member:hover  { border-color: rgba(255,255,255,0.28) !important; color: rgba(255,255,255,0.7) !important; }
+        .pw-link:hover    { color: #fff !important; }
+      `}</style>
+
+      <div style={{ background: "#000", color: "#fff", fontFamily: "var(--font-inter,sans-serif)" }}>
         <Navbar />
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-        {/* Background Grid */}
-        <div className="absolute inset-0 opacity-10">
-          <div 
+
+        {/* ── HERO ── */}
+        <section
+          ref={heroRef}
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            padding: "0 clamp(24px,5vw,64px) clamp(48px,8vh,80px)",
+            background: "#000",
+            position: "relative",
+          }}
+        >
+          {/* bottom border */}
+          <div style={{ position:"absolute",bottom:0,left:0,right:0,height:1,background:"rgba(255,255,255,0.06)" }} />
+
+          <p
+            className="pw-hero-label"
             style={{
-              backgroundImage: `
-                linear-gradient(rgba(139, 0, 255, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(139, 0, 255, 0.3) 1px, transparent 1px)
-              `,
-              backgroundSize: '50px 50px'
+              fontSize: 10, fontWeight: 900,
+              textTransform: "uppercase", letterSpacing: "0.42em",
+              color: "rgba(255,255,255,0.22)", marginBottom: 24,
             }}
-            className="w-full h-full"
-          />
-        </div>
-
-        {/* Glowing orbs */}
-        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600 rounded-full blur-[150px] opacity-20" />
-        <div className="absolute top-20 right-20 w-96 h-96 bg-pink-600 rounded-full blur-[150px] opacity-20" />
-
-        <div ref={headingRef} className="max-w-7xl mx-auto text-center relative z-10">
-          <div className="inline-block mb-4">
-            <span className="px-4 py-2 bg-purple-500/20 border border-purple-500 rounded-lg text-sm font-mono text-purple-300">
-              {'> ls projects/'}
-            </span>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent font-mono">
-            PROJECT WALL
-          </h1>
-          <p className="text-gray-400 text-lg font-mono max-w-2xl mx-auto">
-            // Showcasing our team's innovation and creativity
+          >
+            / REPOSITORY
           </p>
-        </div>
-      </section>
 
-      {/* Projects Grid */}
-      <section ref={sectionRef} className="pb-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project, index) => (
+          <h1
+            className="pw-hero-title"
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: "clamp(72px,16vw,180px)",
+              fontWeight: 900,
+              textTransform: "uppercase",
+              lineHeight: 0.82,
+              letterSpacing: "-0.02em",
+              margin: 0,
+            }}
+          >
+            PROJECT{" "}
+            <span style={{ color: "rgba(255,255,255,0.14)" }}>WALL</span>.
+          </h1>
+
+          <p
+            className="pw-hero-hint"
+            style={{
+              fontSize: 10,
+              textTransform: "uppercase",
+              letterSpacing: "0.36em",
+              color: "rgba(255,255,255,0.17)",
+              marginTop: 28,
+              display: "flex", alignItems: "center", gap: 14,
+            }}
+          >
+            <span style={{ display:"inline-block",width:32,height:1,background:"rgba(255,255,255,0.13)" }} />
+            SCROLL DOWN TO EXPLORE ALL PROJECTS
+          </p>
+        </section>
+
+        {/* ── PINNED HORIZONTAL SECTION ── */}
+        <div
+          ref={outerRef}
+          style={{ overflow: "hidden", background: "#000" }}
+        >
+          {/* Track: N cards × 100vw wide */}
+          <div
+            ref={trackRef}
+            style={{
+              display: "flex",
+              height: "100vh",
+              width: `${N * 100}vw`,
+              willChange: "transform",
+            }}
+          >
+            {HARDCODED_PROJECTS.map((project, idx) => (
               <div
-                key={project.id}
-                ref={el => cardsRef.current[index] = el}
-                className="group relative"
+                key={project._id}
+                className="pw-card"
+                style={{
+                  width: "100vw", height: "100%",
+                  flexShrink: 0,
+                  display: "flex", flexDirection: "row",
+                  background: "#000",
+                  borderRight: "1px solid rgba(255,255,255,0.05)",
+                  overflow: "hidden", position: "relative",
+                }}
               >
-                {/* Glow effect */}
-                <div className="absolute -inset-1 bg-linear-to-r from-purple-600 to-pink-600 rounded-2xl blur-lg opacity-25 group-hover:opacity-75 transition-opacity duration-500" />
-                
-                {/* Card */}
-                <div className="relative bg-gray-900 rounded-2xl border border-purple-500/30 overflow-hidden hover:border-purple-500 transition-all duration-300 h-full flex flex-col">
-                  {/* Project Image */}
-                  <div className="relative h-48 overflow-hidden bg-gray-800">
-                    <img 
-                      src={project.image} 
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-linear-to-t from-gray-900 via-transparent to-transparent" />
+                {/* Image */}
+                <div style={{ position:"relative",width:"52%",height:"100%",flexShrink:0,overflow:"hidden" }}>
+                  <div
+                    className="pw-img-bg"
+                    style={{
+                      position: "absolute", inset: "-12%",
+                      backgroundImage: `url(${project.image})`,
+                      backgroundSize: "cover", backgroundPosition: "center",
+                      willChange: "transform",
+                    }}
+                  />
+                  <div style={{
+                    position:"absolute",inset:0,
+                    background:
+                      "linear-gradient(to right,rgba(0,0,0,0.02) 28%,rgba(0,0,0,0.92) 100%)," +
+                      "linear-gradient(to bottom,rgba(0,0,0,0.4) 0%,transparent 30%)",
+                  }} />
+                  <div style={{
+                    position:"absolute",bottom:16,left:20,
+                    fontFamily:"'Bebas Neue',sans-serif",
+                    fontSize:"clamp(80px,15vw,160px)",lineHeight:1,
+                    color:"rgba(255,255,255,0.06)",userSelect:"none",pointerEvents:"none",
+                  }}>
+                    {String(idx + 1).padStart(2, "0")}
                   </div>
+                </div>
 
-                  {/* Content */}
-                  <div className="p-6 flex-1 flex flex-col">
-                    {/* Header */}
-                    <div className="mb-4">
-                      <h3 className="text-xl font-bold mb-2 text-white">{project.title}</h3>
-                      <p className="text-gray-400 text-sm line-clamp-2">{project.description}</p>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="mb-4">
-                      <div className="flex flex-wrap gap-2">
-                        {project.tags.map((tag, i) => (
-                          <span 
-                            key={i}
-                            className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs font-mono border border-purple-500/30"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Meta Info */}
-                    <div className="mt-auto">
-                      <div className="flex items-center justify-between text-xs text-gray-500 font-mono mb-4">
-                        <span>By {project.author}</span>
-                        <span>{project.date}</span>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2">
-                        <a
-                          href={project.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-purple-600 rounded-lg transition-colors border border-gray-700 hover:border-purple-500"
-                        >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
-                          </svg>
-                          <span className="text-xs font-mono">Code</span>
-                        </a>
-                        <a
-                          href={project.liveUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                          <span className="text-xs font-mono">Live</span>
-                        </a>
-                      </div>
+                {/* Content */}
+                <div
+                  className="pw-card-body"
+                  style={{
+                    flex: 1,
+                    display: "flex", flexDirection: "column",
+                    justifyContent: "space-between",
+                    padding: "clamp(28px,4vw,68px)",
+                    overflowY: "auto",
+                  }}
+                >
+                  <div>
+                    <p style={{ fontSize:9,fontWeight:900,textTransform:"uppercase",letterSpacing:"0.38em",color:"rgba(255,255,255,0.26)",marginBottom:4 }}>
+                      {project.domain}
+                    </p>
+                    <p style={{ fontSize:9,textTransform:"uppercase",letterSpacing:"0.22em",color:"rgba(255,255,255,0.13)",marginBottom:16 }}>
+                      {project.teamName}
+                    </p>
+                    <h2 style={{
+                      fontFamily:"'Bebas Neue',sans-serif",
+                      fontSize:"clamp(40px,5.5vw,80px)",
+                      fontWeight:900,textTransform:"uppercase",lineHeight:0.88,
+                      color:"#fff",marginBottom:16,
+                    }}>
+                      {project.title}
+                    </h2>
+                    <div style={{ width:"58%",height:1,background:"rgba(255,255,255,0.12)",marginBottom:16 }} />
+                    <p style={{ fontSize:11,textTransform:"uppercase",letterSpacing:"0.07em",lineHeight:2,color:"rgba(255,255,255,0.25)",maxWidth:420,marginBottom:18 }}>
+                      {project.description}
+                    </p>
+                    <div style={{ display:"flex",flexWrap:"wrap",gap:6,marginBottom:24 }}>
+                      {project.tags.map(tag => (
+                        <span key={tag} style={{ fontSize:8,textTransform:"uppercase",letterSpacing:"0.18em",padding:"3px 9px",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.22)" }}>
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Bottom accent line */}
-                  <div className="h-1 bg-linear-to-r from-purple-500 via-pink-500 to-purple-500" />
+                  <div>
+                    {/* Members */}
+                    <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
+                      <span style={{ fontSize:9,fontWeight:900,textTransform:"uppercase",letterSpacing:"0.3em",color:"rgba(255,255,255,0.18)",whiteSpace:"nowrap" }}>
+                        Contributors
+                      </span>
+                      <div style={{ flex:1,height:1,background:"rgba(255,255,255,0.06)" }} />
+                      <span style={{ fontSize:9,color:"rgba(255,255,255,0.1)",whiteSpace:"nowrap" }}>
+                        {project.members.length} members
+                      </span>
+                    </div>
+                    <div style={{ display:"flex",flexWrap:"wrap",gap:6,marginBottom:20 }}>
+                      {project.members.map(name => (
+                        <span key={name} className="pw-member" style={{
+                          fontSize:8,textTransform:"uppercase",letterSpacing:"0.13em",
+                          padding:"4px 9px",border:"1px solid rgba(255,255,255,0.08)",
+                          color:"rgba(255,255,255,0.3)",cursor:"default",transition:"all .22s",
+                        }}>
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Bottom */}
+                    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:14,borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+                      <span style={{ fontSize:9,textTransform:"uppercase",letterSpacing:"0.22em",color:"rgba(255,255,255,0.13)" }}>
+                        {project.points} XP
+                      </span>
+                      <a
+                        href={project.deployedLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="pw-link"
+                        style={{ fontSize:10,fontWeight:900,textTransform:"uppercase",letterSpacing:"0.26em",color:"rgba(255,255,255,0.28)",textDecoration:"none",transition:"color .22s" }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        VIEW PROJECT →
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </section>
-    </div>
+
+        <Footer />
+      </div>
+    </>
   );
 }

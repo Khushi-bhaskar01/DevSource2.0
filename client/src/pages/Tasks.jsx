@@ -1,290 +1,130 @@
-import React, { useEffect, useState, useRef } from "react";
-import { gsap } from "gsap";
+import React, { useEffect, useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
-import TaskCard from "../components/TaskCard";
+import Footer from "../components/Footer";
 import TaskSubmitModal from "../components/TaskSubmitModal";
 import api from "../api/axiosInstance";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../AuthContext";
-
-const DOMAINS = ["web", "app", "game"];
-const POINT_CATEGORIES = ["Beginner", "Intermediate", "Advanced"];
+import { ChevronRight, Target, Zap } from "lucide-react";
 
 export default function Tasks() {
-  const navigate = useNavigate();
-  const { user: authUser, loading: authLoading } = useAuth();
-
   const [tasks, setTasks] = useState([]);
-  const [submissions, setSubmissions] = useState({});
-  const [modalTask, setModalTask] = useState(null);
-  const [userPoints, setUserPoints] = useState(0);
-  const [activeDomain, setActiveDomain] = useState("web");
-  const [activeCategory, setActiveCategory] = useState("Beginner");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const headerRef = useRef(null);
-  const pointsRef = useRef(null);
-  const filtersRef = useRef(null);
+  const [filter, setFilter] = useState("all");
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !loading) {
-      gsap.fromTo(
-        headerRef.current,
-        { opacity: 0, y: -20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
-      );
-
-      gsap.fromTo(
-        pointsRef.current,
-        { opacity: 0, x: 20 },
-        { opacity: 1, x: 0, duration: 0.6, delay: 0.2, ease: "power2.out" }
-      );
-
-      gsap.fromTo(
-        filtersRef.current,
-        { opacity: 0, y: 10 },
-        { opacity: 1, y: 0, duration: 0.6, delay: 0.3, ease: "power2.out" }
-      );
-    }
-  }, [authLoading, loading]);
-
-  /* ================= FETCH DATA ================= */
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!authUser?._id) {
-      navigate("/login");
-      return;
-    }
-
-    const fetchData = async () => {
+    const fetchTasks = async () => {
       try {
-        setError("");
-
-        if (authUser.points !== undefined) {
-          setUserPoints(authUser.points || 0);
-        } else {
-          const userRes = await api.get("/api/user/data");
-          setUserPoints(userRes.data?.userData?.points || userRes.data?.points || 0);
-        }
-
-        const taskRes = await api.get("/api/tasks");
-        const tasksData = Array.isArray(taskRes.data) 
-          ? taskRes.data 
-          : taskRes.data?.tasks || [];
-        setTasks(tasksData);
-
-        const submissionRes = await api.get("/api/submissions/my");
-        const submissionsData = Array.isArray(submissionRes.data)
-          ? submissionRes.data
-          : submissionRes.data?.submissions || [];
-
-        const map = {};
-        submissionsData.forEach((sub) => {
-          const taskId = sub.taskId?._id || sub.taskId || sub.task?._id || sub.task;
-          if (taskId) {
-            map[taskId] = sub;
-          }
-        });
-
-        setSubmissions(map);
+        const res = await api.get("/api/tasks");
+        setTasks(Array.isArray(res.data) ? res.data : res.data?.tasks || []);
       } catch (err) {
-        console.error("Tasks fetch error:", err);
-        setError(err.response?.data?.message || "Failed to load tasks");
-        
-        if (err.response?.status === 401) {
-          navigate("/login");
-        }
+        console.error("Error fetching tasks:", err);
       } finally {
         setLoading(false);
       }
     };
+    fetchTasks();
+  }, []);
 
-    fetchData();
-  }, [authUser, authLoading, navigate]);
+  const filteredTasks = useMemo(() => {
+    if (filter === "all") return tasks;
+    return tasks.filter((t) => t.domain === filter);
+  }, [tasks, filter]);
 
-  /* ================= SUBMIT ================= */
-  const handleSubmitProof = async ({ taskId, submissionLink }) => {
+  const handleOpenModal = (task) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitTask = async (submissionData) => {
     try {
-      setError("");
-      
-      const res = await api.post("/api/submissions", {
-        taskId,
-        submissionLink,
-      });
-
-      const newSubmission = res.data?.submission || res.data;
-
-      setSubmissions((prev) => ({
-        ...prev,
-        [taskId]: newSubmission,
-      }));
-
-      setModalTask(null);
-
-      try {
-        const userRes = await api.get("/api/user/data");
-        setUserPoints(userRes.data?.userData?.points || userRes.data?.points || 0);
-      } catch (err) {
-        console.error("Failed to refresh points:", err);
-      }
+      await api.post("/api/submissions", submissionData);
+      alert("MISSION TRANSMITTED SUCCESSFULLY.");
     } catch (err) {
-      console.error("Submission error:", err);
-      setError(err.response?.data?.message || "Failed to submit task");
       throw err;
     }
   };
 
-  /* ================= FILTER ================= */
- const filteredTasks = tasks.filter((t) => {
-  if (!t.domain?.toLowerCase().includes(activeDomain)) return false;
+  if (loading) return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center font-black uppercase tracking-[0.5em] text-[10px]">
+       INITIALIZING_OBJECTIVES...
+    </div>
+  );
 
-  const points = Number(t.points) || 0;
-
-  if (activeCategory === "Beginner") return points <= 50;
-  if (activeCategory === "Intermediate") return points > 50 && points <= 200;
-  if (activeCategory === "Advanced") return points > 200;
-
-  return false;
-});
-
-
-  /* ================= LOADING ================= */
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-black text-white pt-24">
-        <Navbar />
-        <div className="flex items-center justify-center mt-20">
-          <div className="flex items-center gap-3 px-6 py-3 bg-zinc-900 border border-zinc-700 rounded-lg">
-            <svg className="animate-spin h-5 w-5 text-purple-500" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <p className="font-mono text-sm text-gray-300">Loading tasks...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ================= RENDER ================= */
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-6">
+    <div className="min-h-screen bg-black text-white selection:bg-premium-accent/30 font-inter">
       <Navbar />
-
-      <div className="max-w-7xl mx-auto mt-10 space-y-8">
-        {/* HEADER */}
-        <div className="flex justify-between items-center flex-wrap gap-6">
-          <h1 
-            ref={headerRef}
-            className="text-4xl md:text-5xl font-bold font-mono text-white"
-          >
-            / tasks
+      
+      <main className="max-w-5xl mx-auto px-6 pt-40 pb-20">
+        <header className="mb-20 border-b border-white/5 pb-10">
+          <span className="text-zinc-500 font-black uppercase tracking-[0.4em] text-[9px] block mb-4">/ OBJECTIVES</span>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">
+            MISSION <span className="text-zinc-800">LOG</span>.
           </h1>
+        </header>
 
-          {/* TOTAL POINTS */}
-          <div 
-            ref={pointsRef}
-            className="bg-zinc-900 border-2 border-zinc-700 px-6 py-3 rounded-xl hover:border-purple-500/60 transition-colors"
-          >
-            <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">Total Points</p>
-            <p className="text-2xl font-bold font-mono text-white mt-1">
-              {userPoints.toLocaleString()}
-            </p>
-          </div>
+        {/* Minimalist Filter */}
+        <div className="flex gap-8 mb-12">
+          {["all", "web", "app", "game"].map((domain) => (
+            <button
+              key={domain}
+              onClick={() => setFilter(domain)}
+              className={`text-[10px] font-black uppercase tracking-widest transition-all ${
+                filter === domain ? "text-premium-accent" : "text-zinc-600 hover:text-white"
+              }`}
+            >
+              [{domain}]
+            </button>
+          ))}
         </div>
 
-        {/* ERROR MESSAGE */}
-        {error && (
-          <div className="bg-red-500/10 border-2 border-red-500/40 px-5 py-4 rounded-xl">
-            <p className="text-red-400 font-mono text-sm">{error}</p>
-          </div>
-        )}
+        {/* Clean List View */}
+        <div className="space-y-4">
+          {filteredTasks.map((task, idx) => (
+            <motion.div 
+              key={task._id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              onClick={() => handleOpenModal(task)}
+              className="group bg-white/2 border border-white/5 p-8 flex flex-col md:flex-row items-center justify-between gap-8 cursor-pointer hover:bg-white/5 hover:border-white/10 transition-all"
+            >
+              <div className="flex-1">
+                 <div className="flex items-center gap-4 mb-2">
+                    <span className="text-[8px] font-black text-zinc-700 uppercase tracking-widest">{task.domain}</span>
+                    <h3 className="text-lg font-black uppercase tracking-tight text-white group-hover:text-premium-accent transition-colors">
+                      {task.title}
+                    </h3>
+                 </div>
+                 <p className="text-[10px] text-zinc-500 uppercase tracking-wide line-clamp-1">{task.description}</p>
+              </div>
 
-        {/* FILTERS */}
-        <div ref={filtersRef} className="space-y-4">
-          {/* DOMAIN FILTER */}
-          <div className="flex flex-wrap gap-3">
-            <span className="text-sm font-mono text-gray-500 self-center mr-2">Domain:</span>
-            {DOMAINS.map((d) => (
-              <button
-                key={d}
-                onClick={() => setActiveDomain(d)}
-                className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
-                  activeDomain === d
-                    ? "bg-purple-600 text-white border-2 border-purple-500"
-                    : "bg-zinc-900 text-gray-400 border-2 border-zinc-700 hover:border-zinc-600 hover:text-gray-300"
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-
-          {/* POINT FILTER */}
-          <div className="flex flex-wrap gap-3">
-            <span className="text-sm font-mono text-gray-500 self-center mr-2">Level:</span>
-            {POINT_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
-                  activeCategory === cat
-                    ? "bg-purple-600 text-white border-2 border-purple-500"
-                    : "bg-zinc-900 text-gray-400 border-2 border-zinc-700 hover:border-zinc-600 hover:text-gray-300"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+              <div className="flex items-center gap-10">
+                 <div className="text-right">
+                    <span className="text-[8px] font-black text-zinc-800 uppercase tracking-widest block">PRIORITY</span>
+                    <span className="text-xs font-black text-white">{task.points} XP</span>
+                 </div>
+                 <ChevronRight className="text-zinc-800 group-hover:translate-x-1 group-hover:text-white transition-all" size={20} />
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* TASK GRID */}
-        {filteredTasks.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="inline-block bg-zinc-900 border-2 border-zinc-700 px-8 py-6 rounded-xl">
-              <p className="text-gray-400 font-mono">
-                No tasks found for <span className="text-purple-400">{activeDomain}</span> - <span className="text-purple-400">{activeCategory}</span>
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-12">
-            {filteredTasks.map((task, index) => {
-              const submission = submissions[task._id];
-              return (
-                <TaskCard
-                  key={task._id}
-                  task={task}
-                  submission={submission || null}
-                  onOpenSubmit={() => {
-                    if (submission) return;
-                    setModalTask(task);
-                  }}
-                  index={index}
-                />
-              );
-            })}
-          </div>
+        {filteredTasks.length === 0 && (
+           <div className="py-40 text-center border-t border-white/5 mt-10">
+              <p className="text-[9px] font-black text-zinc-800 uppercase tracking-[1em]">LOGS_EMPTY</p>
+           </div>
         )}
+      </main>
 
-        {/* SUBMIT MODAL */}
-        {modalTask && (
-          <TaskSubmitModal
-            open
-            task={modalTask}
-            onClose={() => setModalTask(null)}
-            onSubmit={({ submissionLink }) =>
-              handleSubmitProof({
-                taskId: modalTask._id,
-                submissionLink,
-              })
-            }
-          />
-        )}
-      </div>
+      <TaskSubmitModal 
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmitTask}
+        task={selectedTask}
+      />
+      <Footer />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "./api/axiosInstance";
+import { auth } from "./firebase/config";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -7,20 +9,25 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 check auth on app load (cookie-based)
+  // 🔥 Listen for Firebase auth state changes
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await api.get("/api/user/data"); // protected
-        setUser(res.data?.user || null);
-      } catch {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Sync with backend to get MongoDB user data
+          const res = await api.get("/api/user/data");
+          setUser(res.data?.user || null);
+        } catch (err) {
+          console.error("Error syncing user data:", err);
+          setUser(null);
+        }
+      } else {
         setUser(null);
-      } finally {
-        setLoading(false);
       }
-    };
+      setLoading(false);
+    });
 
-    checkAuth();
+    return () => unsubscribe();
   }, []);
 
   const login = (userData) => {
@@ -29,7 +36,8 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await api.post("/api/auth/logout");
+      await signOut(auth);
+      // Optional: notify backend of logout if needed
     } catch (err) {
       console.error("Logout error", err);
     }

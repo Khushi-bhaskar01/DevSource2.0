@@ -1,264 +1,145 @@
-// import { Link, useLocation, useNavigate } from "react-router-dom";
-// import React, { useState, useEffect } from "react";
-// import { Menu, X, User, LogOut } from "lucide-react";
-
-// const navigationItems = [
-//   { label: "Home", path: "/" },
-//   { label: "Members", path: "/members" },
-//   { label: "Projects Wall", path: "/projects" },
-//   { label: "Task", path: "/task" },
-//   { label: "Leaderboard", path: "/leaderboard" },
-// ];
-
-// export default function Navbar() {
-//   const [isOpen, setIsOpen] = useState(false);
-//   const [isLoggedIn, setIsLoggedIn] = useState(false);
-//   const [userId, setUserId] = useState(null);
-
-//   const location = useLocation();
-//   const navigate = useNavigate();
-
-//   // FIX: Load login state once on mount
-//   useEffect(() => {
-//     const token = localStorage.getItem("authToken");
-//     const uid = localStorage.getItem("userId");
-
-//     if (token && uid) {
-//       setIsLoggedIn(true);
-//       setUserId(uid);
-//     } else {
-//       setIsLoggedIn(false);
-//       setUserId(null);
-//     }
-//   }, []);
-
-//   // PROFILE PATH
-//   const profilePath = isLoggedIn ? `/profile/${userId}` : "/login";
-
-//   // LOGOUT
-//   const handleLogout = () => {
-//     localStorage.removeItem("authToken");
-//     localStorage.removeItem("userId");
-//     setIsLoggedIn(false);
-//     navigate("/login");
-//   };
-
-//   return (
-//     <header className="fixed inset-x-0 top-0 z-50 bg-black/30 backdrop-blur-md border-b border-white/10">
-//       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-10 h-20 flex items-center justify-between">
-
-//         {/* LOGO */}
-//         <div className="flex items-center gap-3">
-//           <img src="/logo.png" alt="DevSource Logo" className="w-10 h-10" />
-//           <h1 className="text-white font-[Zen_Dots] text-xl md:text-2xl">DevSource</h1>
-//         </div>
-
-//         {/* Desktop Nav */}
-//         <nav className="hidden md:flex items-center gap-8">
-//           {navigationItems.map((item) => (
-//             <Link
-//               key={item.label}
-//               to={item.path}
-//               className={`relative font-[Zen_Dots] text-sm transition-all duration-300 ${
-//                 location.pathname === item.path
-//                   ? "text-[#ff81cc]"
-//                   : "text-white hover:text-[#ff81cc]"
-//               }`}
-//             >
-//               {item.label}
-//               {location.pathname === item.path && (
-//                 <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#ff81cc] rounded-full"></span>
-//               )}
-//             </Link>
-//           ))}
-//         </nav>
-
-//         {/* Profile + Logout */}
-//         <div className="flex items-center gap-4">
-//           {isLoggedIn && (
-//             <button
-//               onClick={handleLogout}
-//               className="hidden md:flex w-9 h-9 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-400 items-center justify-center transition"
-//             >
-//               <LogOut size={18} />
-//             </button>
-//           )}
-
-//           <Link
-//             to={profilePath}
-//             className="hidden md:flex w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center transition"
-//           >
-//             <User size={18} className="text-white" />
-//           </Link>
-
-//           {/* Mobile Menu */}
-//           <button
-//             onClick={() => setIsOpen(!isOpen)}
-//             className="md:hidden text-white p-2 rounded hover:bg-white/10 transition"
-//           >
-//             {isOpen ? <X size={24} /> : <Menu size={24} />}
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Mobile Menu */}
-//       {isOpen && (
-//         <div className="md:hidden bg-black/95 border-t border-gray-700 px-4 py-4 space-y-3">
-//           {navigationItems.map((item) => (
-//             <Link
-//               key={item.label}
-//               to={item.path}
-//               onClick={() => setIsOpen(false)}
-//               className={`block font-[Zen_Dots] text-sm ${
-//                 location.pathname === item.path
-//                   ? "text-[#ff81cc]"
-//                   : "text-white hover:text-[#ff81cc]"
-//               }`}
-//             >
-//               {item.label}
-//             </Link>
-//           ))}
-
-//           {/* Mobile Profile */}
-//           <Link
-//             to={profilePath}
-//             onClick={() => setIsOpen(false)}
-//             className="flex items-center gap-2 mt-4 text-white hover:text-[#ff81cc] font-[Zen_Dots]"
-//           >
-//             <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
-//               <User size={18} />
-//             </div>
-//             <span>Profile</span>
-//           </Link>
-
-//           {/* Mobile Logout */}
-//           {isLoggedIn && (
-//             <button
-//               onClick={() => {
-//                 handleLogout();
-//                 setIsOpen(false);
-//               }}
-//               className="flex items-center gap-2 mt-3 text-red-400 hover:text-red-500 font-[Zen_Dots]"
-//             >
-//               <LogOut size={18} />
-//               <span>Logout</span>
-//             </button>
-//           )}
-//         </div>
-//       )}
-//     </header>
-//   );
-// }
-
-// newww
-
 import { useAuth } from "../AuthContext";
 import { Link, useLocation } from "react-router-dom";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Menu, X, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navigationItems = [
   { label: "Home", path: "/" },
   { label: "Members", path: "/members" },
-  { label: "Projects Wall", path: "/projects" },
+  { label: "Projects", path: "/projects" },
   { label: "Task", path: "/tasks" },
-  { label: "Leaderboard", path: "/leaderboard" },
+  { label: "Rankings", path: "/leaderboard" },
 ];
 
 export default function Navbar() {
   const { user } = useAuth();
   const userId = user?._id || user?.id || null;
-  // Private editable profile for logged-in users
   const profilePath = userId ? `/profile` : "/login";
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-black/30 backdrop-blur-md border-b border-white/10">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-10 h-20 flex items-center justify-between">
-
+    <header 
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 border-b ${
+        scrolled 
+          ? "bg-black/80 backdrop-blur-xl border-white/10 py-4" 
+          : "bg-transparent border-transparent py-6"
+      }`}
+    >
+      <div className="mx-auto w-full max-w-7xl px-6 md:px-12 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-3">
-          <img
-            src="/logo.png"
-            alt="DevSource Logo"
-            className="w-10 h-10 object-contain"
-          />
-          <h1 className="text-white font-[Zen_Dots] text-xl md:text-2xl">
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="relative">
+            <img src="/logo.png" alt="DevSource" className="w-8 h-8 object-contain transition-transform duration-500 group-hover:rotate-180" />
+            <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <span className="text-white font-outfit font-black text-xl tracking-tighter uppercase">
             DevSource
-          </h1>
-        </div>
+          </span>
+        </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-10">
           {navigationItems.map((item) => (
             <Link
               key={item.label}
               to={item.path}
-              className={`relative font-mono text-lg transition-all duration-300 ${
+              className={`relative font-inter text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
                 location.pathname === item.path
-                  ? "text-[#ff81cc]"
-                  : "text-white hover:text-[#ff81cc]"
+                  ? "text-white"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
-              {item.label}
+              <span className="relative z-10">{item.label}</span>
               {location.pathname === item.path && (
-                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#ff81cc] rounded-full"></span>
+                <motion.span 
+                  layoutId="navUnderline"
+                  className="absolute -bottom-2 left-0 w-full h-[1px] bg-premium-accent"
+                />
               )}
             </Link>
           ))}
         </nav>
 
-        {/* Desktop Profile Icon */}
-        <div className="hidden md:flex items-center">
+        {/* Profile */}
+        <div className="hidden md:flex items-center gap-8">
+          {(user?.role === "admin" || user?.role === "superadmin") && (
+            <Link
+              to="/admin"
+              className="text-[10px] font-black uppercase tracking-widest text-premium-accent hover:text-white transition-colors"
+            >
+              Override
+            </Link>
+          )}
+          {user && (
+            <Link
+              to="/settings"
+              className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
+            >
+              Config
+            </Link>
+          )}
           <Link
             to={profilePath}
-            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"
+            className="flex items-center gap-3 group"
           >
-            <User className="text-white" size={18} />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-white transition-colors">
+              {user ? "Terminal" : "Access"}
+            </span>
+            <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-white/30 transition-all overflow-hidden bg-white/5">
+              <User size={14} className="text-zinc-400 group-hover:text-white" />
+            </div>
           </Link>
         </div>
 
         {/* Mobile Menu Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden text-white p-2 rounded hover:bg-white/10 transition"
+          className="md:hidden text-white flex flex-col gap-1.5 p-2"
         >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
+          <div className={`w-6 h-0.5 bg-white transition-all ${isOpen ? "rotate-45 translate-y-2" : ""}`} />
+          <div className={`w-4 h-0.5 bg-white transition-all ${isOpen ? "opacity-0" : ""}`} />
+          <div className={`w-6 h-0.5 bg-white transition-all ${isOpen ? "-rotate-45 -translate-y-2" : ""}`} />
         </button>
       </div>
 
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden bg-black/95 border-t border-gray-700 px-4 py-4 space-y-3">
-          {navigationItems.map((item) => (
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-full left-0 w-full bg-black/95 backdrop-blur-2xl border-b border-white/10 px-6 py-12 flex flex-col items-center gap-8 md:hidden shadow-2xl"
+          >
+            {navigationItems.map((item) => (
+              <Link
+                key={item.label}
+                to={item.path}
+                className="text-2xl font-outfit font-black uppercase tracking-tighter hover:text-premium-accent transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
             <Link
-              key={item.label}
-              to={item.path}
-              className={`block font-[Zen_Dots] text-sm ${
-                location.pathname === item.path
-                  ? "text-[#ff81cc]"
-                  : "text-white hover:text-[#ff81cc]"
-              }`}
+              to={profilePath}
+              className="mt-4 px-8 py-3 bg-white text-black font-black uppercase tracking-widest text-xs rounded-full"
               onClick={() => setIsOpen(false)}
             >
-              {item.label}
+              {user ? "View Terminal" : "Access Portal"}
             </Link>
-          ))}
-
-          {/* Mobile Profile */}
-          <Link
-            to={profilePath}
-            className="flex items-center gap-2 mt-4 text-white hover:text-[#ff81cc] font-[Zen_Dots]"
-            onClick={() => setIsOpen(false)}
-          >
-            <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
-              <User size={18} />
-            </div>
-            <span>Profile</span>
-          </Link>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

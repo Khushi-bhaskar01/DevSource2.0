@@ -6,7 +6,8 @@ export const createTaskSchema = Joi.object({
   title: Joi.string().min(2).max(100).required(),
   description: Joi.string().allow("").max(1000),
   points: Joi.number().min(0).required(),
-  deadline: Joi.string().required(),
+  teamName: Joi.string().allow("").max(100),
+  deployedLink: Joi.string().allow("").max(500),
 });
 
 // Schema for updating a task
@@ -15,7 +16,8 @@ export const updateTaskSchema = Joi.object({
   title: Joi.string().min(2).max(100).required(),
   description: Joi.string().allow("").max(1000),
   points: Joi.number().min(0).required(),
-  deadline: Joi.string().required(),
+  teamName: Joi.string().allow("").max(100),
+  deployedLink: Joi.string().allow("").max(500),
 });
 
 // Schema for submitting a task
