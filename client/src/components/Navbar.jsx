@@ -38,7 +38,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="relative">
-            <img src="/logo.png" alt="DevSource" className="w-8 h-8 object-contain transition-transform duration-500 group-hover:rotate-180" />
+            <img src="/logo.png" alt="DevSource" className="w-8 h-8 object-contain transition-transform duration-500" />
             <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <span className="text-white font-outfit font-black text-xl tracking-tighter uppercase">

@@ -20,6 +20,7 @@ export default function Settings() {
     profilePicture: "",
     year: "",
     branch: "",
+    domain: [],
   });
 
   useEffect(() => {
@@ -32,9 +33,21 @@ export default function Settings() {
         profilePicture: user.profilePicture || "",
         year: user.year || "",
         branch: user.branch || "",
+        domain: user.domain || [],
       });
     }
   }, [user]);
+
+  const toggleDomain = (domainName) => {
+    setForm((prev) => {
+      const current = prev.domain || [];
+      if (current.includes(domainName)) {
+        return { ...prev, domain: current.filter((d) => d !== domainName) };
+      } else {
+        return { ...prev, domain: [...current, domainName] };
+      }
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -136,6 +149,27 @@ export default function Settings() {
                      />
                   </div>
                </div>
+            </div>
+          </div>
+
+          {/* Section: Domain Selection */}
+          <div>
+            <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-8">DOMAIN_SPECIALIZATION</span>
+            <div className="flex flex-wrap gap-4">
+              {["web", "app", "game"].map((d) => (
+                <button
+                  type="button"
+                  key={d}
+                  onClick={() => toggleDomain(d)}
+                  className={`px-4 py-2 border text-[10px] font-black uppercase tracking-widest transition-all ${
+                    form.domain?.includes(d)
+                      ? "bg-premium-accent border-premium-accent text-white"
+                      : "bg-zinc-900 border-white/10 text-zinc-500 hover:border-premium-accent/50 hover:text-white"
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -22,18 +22,18 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section 
+    <section
       id="home"
       ref={containerRef}
       className="relative min-h-screen flex items-center justify-center pt-24 overflow-hidden border-b border-white/5 bg-[#050505]"
     >
       {/* Premium Accent Blob */}
       <div className="hero-blob absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-premium-accent/10 rounded-full blur-[160px] opacity-40 pointer-events-none z-0" />
-      
+
       <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
         <div className="flex flex-col items-center justify-center text-center">
           {/* Index Label */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -46,7 +46,7 @@ export default function HeroSection() {
 
           {/* Main Title Section */}
           <div className="relative mb-12">
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 50, filter: 'blur(10px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
@@ -56,14 +56,14 @@ export default function HeroSection() {
               <span className="flex items-center gap-4 justify-center">
                 FUTURE
                 <div className="w-16 h-16 md:w-28 md:h-28 rounded-full border border-white/10 flex items-center justify-center bg-white/5 backdrop-blur-sm">
-                   <div className="w-3 h-3 bg-premium-accent rounded-full animate-ping" />
+                  <div className="w-3 h-3 bg-premium-accent rounded-full animate-ping" />
                 </div>
               </span>
             </motion.h1>
           </div>
 
           {/* Subtitle / Content */}
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.8 }}
@@ -73,28 +73,28 @@ export default function HeroSection() {
           </motion.p>
 
           {/* CTA Buttons */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 1 }}
             className="flex flex-col sm:flex-row items-center gap-6"
           >
-            <button 
+            <button
               onClick={() => window.location.href = '/tasks'}
               className="group relative px-12 py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-full overflow-hidden transition-all hover:bg-premium-accent hover:text-white"
             >
               <span className="relative z-10 flex items-center gap-2">
                 DEPLOY SYSTEM
                 <motion.div
-                   animate={{ x: [0, 5, 0] }}
-                   transition={{ repeat: Infinity, duration: 1.5 }}
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                   →
+                  →
                 </motion.div>
               </span>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
               className="px-12 py-5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-full hover:bg-white/5 hover:border-white/30 transition-all flex items-center gap-3"
             >

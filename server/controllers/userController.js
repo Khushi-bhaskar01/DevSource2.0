@@ -20,6 +20,7 @@ export const getUserData = async (req, res) => {
 
     res.json({
       success: true,
+      allUsers: visibleUsers,
       user: {
         _id: req.user._id,
         name: req.user.name,

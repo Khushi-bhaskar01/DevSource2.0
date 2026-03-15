@@ -53,6 +53,10 @@ export const isAuthenticated = async (req, res, next) => {
        // Ensure existing user is elevated if email matches
        user.role = 'superadmin';
        await user.save();
+    } else if (user.email !== process.env.SUPER_ADMIN_EMAIL && user.role === 'superadmin') {
+       // Aggressively demote any unauthorized superadmins
+       user.role = 'student';
+       await user.save();
     }
 
     req.user = user;
@@ -94,9 +98,7 @@ export const isAdmin = (req, res, next) => {
  * Checks if the user is a Super Admin based on ENV email.
  */
 export const isSuperAdmin = (req, res, next) => {
-  const role = req.user?.role?.toLowerCase();
   const isSuper = req.user && (
-    role === "superadmin" || 
     req.user.email?.toLowerCase() === process.env.SUPER_ADMIN_EMAIL?.toLowerCase()
   );
 

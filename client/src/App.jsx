@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import InitialLoader from "./components/InitialLoader";
+import { useState, useEffect } from "react";
 
 // Public Pages
 import Login from "./pages/login";
@@ -21,8 +23,26 @@ import AdminSubmissions from "./pages/admin/AdminSubmissions";
 import AdminUsers from "./pages/admin/AdminUsers";
 
 export default function App() {
+  const [showLoader, setShowLoader] = useState(true);
+
+  useEffect(() => {
+    // Check if loader has already been shown in this session
+    const hasLoaded = sessionStorage.getItem("devSourceInitialLoad");
+    if (hasLoaded) {
+      setShowLoader(false);
+    }
+  }, []);
+
+  const handleLoaderComplete = () => {
+    sessionStorage.setItem("devSourceInitialLoad", "true");
+    setShowLoader(false);
+  };
+
   return (
-    <Router>
+    <>
+      {showLoader && <InitialLoader onComplete={handleLoaderComplete} />}
+      {!showLoader && (
+        <Router>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
@@ -123,7 +143,9 @@ export default function App() {
 
         {/* Fallback - Redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+      )}
+    </>
   );
 }

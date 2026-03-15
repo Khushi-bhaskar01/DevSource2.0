@@ -11,7 +11,8 @@ import {
   GraduationCap,
   ShieldAlert,
   SearchIcon,
-  Filter
+  Filter,
+  ChevronRight
 } from "lucide-react";
 
 export default function AdminUsers() {
@@ -53,7 +54,9 @@ export default function AdminUsers() {
       setError("");
       const res = await api.get("/api/user/data");
       let allUsers = [];
-      if (res.data?.members) {
+      if (res.data?.allUsers) {
+        allUsers = res.data.allUsers;
+      } else if (res.data?.members) {
         const { webDev = [], gameDev = [], appDev = [], other = [] } = res.data.members;
         const userMap = new Map();
         [...webDev, ...gameDev, ...appDev, ...other].forEach(u => u._id && userMap.set(u._id.toString(), u));
