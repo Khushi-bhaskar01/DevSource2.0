@@ -13,6 +13,7 @@ export default function Tasks() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submissions, setSubmissions] = useState([]);
+  const [expandedTaskIds, setExpandedTaskIds] = useState(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,9 +137,28 @@ export default function Tasks() {
                     </h3>
                   </div>
 
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-wide line-clamp-1">
-                    {task.description}
-                  </p>
+                  <div className="relative">
+                    <p className={`text-[10px] text-zinc-500 uppercase tracking-wide leading-relaxed transition-all duration-300 ${expandedTaskIds.has(task._id) ? "" : "line-clamp-2"}`}>
+                      {task.description}
+                    </p>
+                    {task.description.length > 80 && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newExpandedSets = new Set(expandedTaskIds);
+                          if (newExpandedSets.has(task._id)) {
+                            newExpandedSets.delete(task._id);
+                          } else {
+                            newExpandedSets.add(task._id);
+                          }
+                          setExpandedTaskIds(newExpandedSets);
+                        }}
+                        className="text-[8px] font-black text-premium-accent/60 uppercase tracking-widest mt-2 hover:text-white transition-all underline underline-offset-4 decoration-white/0 hover:decoration-white/20"
+                      >
+                        {expandedTaskIds.has(task._id) ? "[ SHOW_LESS ]" : "[ READ_MORE ]"}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-10">

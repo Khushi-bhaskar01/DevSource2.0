@@ -39,11 +39,16 @@ export default function TaskSubmitModal({ open, onClose, onSubmit, task }) {
           className="relative w-full max-w-xl bg-black border border-white/10 p-12 shadow-2xl"
         >
           <div className="space-y-12">
-             <header>
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 block mb-6">/ TRANSMISSION INITIATED</span>
-                <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-2">{task.title}</h2>
-                <p className="text-zinc-500 text-xs font-inter uppercase tracking-widest">{task.points} XP MISSION OBJECTIVE</p>
-             </header>
+              <header>
+                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 block mb-6">/ TRANSMISSION INITIATED</span>
+                 <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-2">{task.title}</h2>
+                 <p className="text-zinc-500 text-xs font-inter uppercase tracking-widest mb-6">{task.points} XP MISSION OBJECTIVE</p>
+                 <div className="bg-white/2 border border-white/5 p-6 mb-8">
+                   <p className="text-[10px] text-zinc-400 uppercase leading-relaxed tracking-wide font-inter">
+                     {task.description}
+                   </p>
+                 </div>
+              </header>
 
              <div className="space-y-8">
                 <div className="bg-white/5 p-8 border border-white/5 focus-within:border-premium-accent/30 transition-all">

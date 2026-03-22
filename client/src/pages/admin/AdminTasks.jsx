@@ -172,7 +172,7 @@ export default function AdminTasks() {
                       <h3 className="text-xl font-black uppercase tracking-tight text-white">{task.title}</h3>
                    </div>
                    <div className="flex flex-wrap gap-6">
-                      <p className="text-xs text-zinc-500 font-inter uppercase leading-relaxed line-clamp-1">{task.description}</p>
+                      <p className="text-xs text-zinc-500 font-inter uppercase leading-relaxed">{task.description}</p>
                       {task.teamName && (
                         <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest border border-white/5 px-2 bg-white/5">TEAM: {task.teamName}</span>
                       )}
