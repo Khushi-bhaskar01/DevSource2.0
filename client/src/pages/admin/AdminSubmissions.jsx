@@ -138,7 +138,12 @@ export default function AdminSubmissions() {
                          <Clock size={12} />
                          <span>{new Date(s.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <a href={s.submissionLink} target="_blank" className="flex items-center gap-2 text-white hover:text-premium-accent transition-colors">
+                      <a 
+                        href={s.submissionLink ? (s.submissionLink.startsWith("http") ? s.submissionLink : `https://${s.submissionLink}`) : "#"} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-white hover:text-premium-accent transition-colors"
+                      >
                          <ExternalLink size={12} />
                          OPEN_ASSET
                       </a>
