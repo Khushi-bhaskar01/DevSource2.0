@@ -34,7 +34,7 @@ const teamMembers = [
     role: "App Dev",
     id: "04",
     skills: ["RE-NATIVE", "FLUTTER", "UI/UX"],
-    image: "https://api.dicebear.com/7.x/avataaars/svg?seed=AnuragKumarSingh",
+    image: "/img.webp",
     github: "https://github.com/shinobi04",
     linkedin: "https://www.linkedin.com/in/anurag40/"
   },
@@ -43,7 +43,7 @@ const teamMembers = [
     role: "Game Dev",
     id: "05",
     skills: ["GODOT", "UNITY", "C#"],
-    image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aadi",
+    image: "/img.webp",
     github: "https://github.com/DarthRevan02",
     linkedin: "https://www.linkedin.com/in/darthaadixd/"
   }
